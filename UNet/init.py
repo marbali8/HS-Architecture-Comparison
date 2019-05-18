@@ -5,7 +5,7 @@ dir_project = '/imatge/mbalibrea/Documents/'
 dir_docs = dir_project + 'data/TRAIN/'
 dir_img = dir_docs + 'images/'
 dir_mask = dir_docs + 'masks/'
-WIDTH_CUTS = 10
+WIDTH_CUTS = 18
 
 
 # HYPERPARAMETERS

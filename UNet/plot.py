@@ -22,7 +22,7 @@ def plot_img_and_mask(img, target, mask): # CHANGED suposant format chw i mask i
     img = (img/np.max(img)*255).astype(int)
     plt.imshow(img)
 
-    print(target.shape, mask.shape)
+    #print(target.shape, mask.shape)
     rgb_target = np.zeros((3, target.shape[1], target.shape[2]))
 
     for (ch,j,k), cl in np.ndenumerate(target):

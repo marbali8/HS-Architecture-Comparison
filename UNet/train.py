@@ -158,4 +158,4 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, img_scale=1):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=5, batchsize=5)
+    train(epochs=50, batchsize=20)

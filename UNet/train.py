@@ -2,6 +2,7 @@ from init import *
 from unet import *
 from utils1 import *
 from utils2 import *
+from extras import *
 
 import sys
 import os
@@ -106,10 +107,9 @@ def train_net(net,
         plt.savefig(dir_docs + 'loss.png', bbox_inches='tight')
         plt.close()
 
-        # FIXME de moment comentat pq no funciona
-        #if 1:
-            #val_dice = eval_net(net, val, gpu)
-            #print('Validation Dice Coeff: {}'.format(val_dice))
+        if 1:
+            val_dice = eval_net(net, val, gpu)
+            print('Validation Dice Coeff: {}'.format(val_dice))
     torch.save(net.state_dict(), dir_docs + 'MODEL.pth')
     print("Saved model")
 
@@ -158,4 +158,4 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, img_scale=1):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=50, batchsize=20)
+    train(epochs=5, batchsize=5, lr=0.1)

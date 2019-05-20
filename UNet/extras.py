@@ -1,5 +1,6 @@
 import torch
 from torch.autograd import Function #, Variable
+import numpy as np
 
 class DiceCoeff(Function):
     """Dice coeff for individual examples"""
@@ -45,18 +46,16 @@ def eval_net(net, dataset, gpu=False):
     net.eval()
     tot = 0
     for i, b in enumerate(dataset):
-        img = b[0]
+        img = b[0].astype(np.float32)
         true_mask = b[1]
 
         img = torch.from_numpy(img).unsqueeze(0)
         true_mask = torch.from_numpy(true_mask).unsqueeze(0)
 
-        if gpu:
+        if gpu and torch.cuda.is_available(): # CHANGED
             img = img.cuda()
             true_mask = true_mask.cuda()
 
-        mask_pred = net(img)[0]
-        mask_pred = (mask_pred > 0.5).float()
-
-        tot += dice_coeff(mask_pred, true_mask).item()
+        mask_pred = net(img) # CHANGED
+        tot += dice_coeff(mask_pred.double(), true_mask.double()).item()
     return tot / (i + 1)

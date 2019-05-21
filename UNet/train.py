@@ -27,7 +27,6 @@ def train_net(net,
               val_percent=0.05,
               gpu=False):
 
-    start = time.time()
     path_img = dir_img+'npy/'
     path_mask = dir_mask+'npy/'
     ids = get_ids_npy(path_img, path_mask)
@@ -35,12 +34,12 @@ def train_net(net,
 
     iddataset = split_train_val(ids, val_percent)
 
-    tb_train_writer.add_text('info', str(epochs) + ' epochs; ' +
-                  str(batch_size) + ' batch size; ' +
-                  str(lr) + ' lr; ' +
-                  str(len(iddataset['train'])) + ' training size; ' +
-                  str(len(iddataset['val'])) + ' validation size; ' +
-                  str(WIDTH_CUTS) + ' width input patches; '
+    tb_train_writer.add_text('info', str(epochs) + ' epochs;\n' +
+                  str(batch_size) + ' batch size;\n' +
+                  str(lr) + ' lr;\n' +
+                  str(len(iddataset['train'])) + ' training size;\n' +
+                  str(len(iddataset['val'])) + ' validation size;\n' +
+                  str(WIDTH_CUTS) + ' width input patches;\n'
                   'UNET 2 deep; SGD, CrossEntropyLoss'
                   )
     # posar SGD parameters de momentum i tal?
@@ -107,7 +106,8 @@ def train_net(net,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            print(str(i+1), end=' ', flush = True)
+            if tb_train_writer == None:
+                print(str(i+1), end=' ', flush = True)
 
         print(flush = False)
         print('Epoch finished ! Loss: {}'.format(epoch_loss[e] / i))
@@ -128,8 +128,6 @@ def train_net(net,
             tb_train_writer.add_scalar('validation loss', val_dice, epoch)
     torch.save(net.state_dict(), dir_docs + 'MODEL.pth')
     print("Saved model")
-    end = time.time()
-    tb_train_writer.add_text('time elapsed', str(end - start))
     tb_train_writer.close()
 
 # CHANGED substitut del parser
@@ -172,4 +170,4 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=5, batchsize=5, lr=0.1)
+    train(epochs=1000, batchsize=20, lr=0.01)

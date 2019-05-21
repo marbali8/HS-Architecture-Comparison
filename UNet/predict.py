@@ -90,9 +90,6 @@ import numpy as np # fins que no he posat això, em donava errors sense sentit x
 # CHANGED substitut del parser
 class ArgsPredict:
 
-  global dir_project
-  global INPUT_BANDS, NET_CLASSES
-
   # CHANGED default scale a 1
   def __init__(self, input, output='', model=dir_docs + 'MODEL.pth', cpu=True, viz=True, no_save=True, no_crf=True, mask_th=0.5, scale=1):
       self.model = model

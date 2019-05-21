@@ -1,6 +1,9 @@
 import torch
+import torchvision
 from torch.autograd import Function #, Variable
 import numpy as np
+
+from plot import *
 
 class DiceCoeff(Function):
     """Dice coeff for individual examples"""
@@ -41,7 +44,8 @@ def dice_coeff(input, target):
 
     return s / (i + 1)
 
-def eval_net(net, dataset, gpu=False):
+# CHANGED
+def eval_net(net, dataset, tb_val_writer, gpu=False):
     """Evaluation without the densecrf with the dice coefficient"""
     net.eval()
     tot = 0
@@ -58,4 +62,9 @@ def eval_net(net, dataset, gpu=False):
 
         mask_pred = net(img) # CHANGED
         tot += dice_coeff(mask_pred.double(), true_mask.double()).item()
+        if i == 0:
+            plot_img_and_mask(  img.cpu().squeeze().numpy(),
+                                torch.argmax(true_mask, 1).cpu().numpy(),
+                                torch.argmax(mask_pred, 1).cpu().squeeze().numpy(),
+                                tb_val_writer)
     return tot / (i + 1)

@@ -5,9 +5,8 @@ import matplotlib.pyplot as plt
 
 rgb_indianpines = [[255,255,255], [255,254,137], [3,28,241], [255,89,1], [5,255,133], [255,2,251], [89,1,255], [3,171,255], [12,255,7], [172,175,84], [160,78,158], [101,173,255], [60,91,112], [104,192,63], [139,69,46], [119,255,172], [254,255,3]]
 
-global NET_CLASSES
 # CHANGED a lot xd
-def plot_img_and_mask(img, target, mask): # CHANGED suposant format chw i mask i target amb valors de 0 a NET_CLASSES
+def plot_img_and_mask(img, target, mask, tb_val_writer=None): # CHANGED suposant format chw i mask i target amb valors de 0 a NET_CLASSES
     #print("max img", np.max(img), "unique target", np.unique(target), "unique mask", np.unique(mask))
 
     fig = plt.figure()
@@ -43,8 +42,12 @@ def plot_img_and_mask(img, target, mask): # CHANGED suposant format chw i mask i
     rgb_mask = np.transpose((rgb_mask/np.max(rgb_mask)*255).astype(int), axes=[1,2,0])
     plt.imshow(rgb_mask)
 
-    plt.savefig(dir_docs + 'predict.png', bbox_inches='tight')
-    plt.close()
-
     #plt.colorbar()
     plt.show()
+
+    #print(tb_writer == None, type(fig))
+    if tb_val_writer == None:
+        plt.savefig(dir_docs + 'predict.png', bbox_inches='tight')
+    else:
+        tb_val_writer.add_figure('example val patch', fig)
+    plt.close()

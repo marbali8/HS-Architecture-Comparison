@@ -16,9 +16,6 @@ def get_ids_tif(dir_img, dir_masks):
 # NEW per pasar de tif a npy tallades
 def doit():
 
-    global dir_img, dir_mask
-    global INPUT_BANDS, NET_CLASSES, WIDTH_CUTS
-
     f_width = WIDTH_CUTS
     f_height = int(f_width / 2) + 1
 

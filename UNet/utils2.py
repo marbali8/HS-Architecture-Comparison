@@ -17,13 +17,13 @@ def split_ids(ids, n=2):
     return ((di, u) for di in ids for u in range(n))
 
 # CHANGED adaptat a npy
-def to_cropped_imgs(ids, dir, suffix, scale):
+def to_cropped_imgs(ids, dir, suffix):
     """From a list of tuples, returns the correct cropped img"""
     for id in ids: #for id, pos in ids:
 
         f = np.load(dir + id + suffix)
 
-        #im = resize_and_crop(f, scale=scale)
+        #im = resize_and_crop(f)
         #if first:
           #print("img after resize_and_crop", im.shape) # formato HWC
           #first = False
@@ -40,16 +40,16 @@ def to_cropped_imgs(ids, dir, suffix, scale):
         #yield get_square(im, pos)
 
 # CHANGED per adaptar a npy
-def get_imgs_and_masks(ids, dir_img, dir_mask, scale, net_channels, net_classes):
+def get_imgs_and_masks(ids, dir_img, dir_mask):
     """Return all the couples (img, mask)"""
 
-    imgs = to_cropped_imgs(ids, dir_img, '.npy', scale) # CHANGED to npy
+    imgs = to_cropped_imgs(ids, dir_img, '.npy') # CHANGED to npy
 
     # need to transform from HWC to CHW
     imgs_switched = map(hwc_to_chw, imgs)
     imgs_normalized = map(normalize, imgs_switched)
 
-    masks = to_cropped_imgs(ids, dir_mask, '_mask.npy', scale) # CHANGED to npy
+    masks = to_cropped_imgs(ids, dir_mask, '_mask.npy') # CHANGED to npy
 
     #if [i for i in masks if i.shape[2] != net_classes] != []:
         #masks = test_random_masks(ids, dir_mask, '_mask.npy', scale, net_classes)

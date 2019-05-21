@@ -3,8 +3,6 @@ from init import *
 import random
 import numpy as np
 
-global dir_img, dir_mask
-
 images = [f.split('.')[0] for f in os.listdir(dir_img+'npy/') if '.npy' in f]
 masks = [f.split('_mask.')[0] for f in os.listdir(dir_mask+'npy/') if '.npy' in f]
 

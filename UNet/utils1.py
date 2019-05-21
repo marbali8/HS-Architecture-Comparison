@@ -16,11 +16,11 @@ def split_img_into_squares(img):
 def hwc_to_chw(img):
     return np.transpose(img, axes=[2, 0, 1]) # si abans era shape (a,b,c) ara és (c,a,b)
 
-def resize_and_crop(img, scale=0.5, final_height=None):
+def resize_and_crop(img, final_height=None):
     w = img.shape[1] # CHANGED from size to shape bc in npy size is a number
     h = img.shape[0] # CHANGED from size to shape bc in npy size is a number
-    newW = int(w * scale)
-    newH = int(h * scale)
+    newW = int(w * 1)
+    newH = int(h * 1)
 
     if not final_height:
         diff = 0

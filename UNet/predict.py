@@ -103,8 +103,8 @@ class ArgsPredict:
       self.output = None if output == '' else output
 
 
-def predict(input):
-    args = ArgsPredict(input)
+def predict(input, model):
+    args = ArgsPredict(input=input, model=model)
     # CHANGED
     out_files = get_output_filenames([args.input], [args.output], extension='jpg')
 
@@ -153,7 +153,7 @@ def predict(input):
 
         if args.viz:
             print("Visualizing results for image {}, close to continue ...".format(fn))
-            plot_img_and_mask(np.transpose(img,(2,0,1)), target, mask)
+            plot_img_and_mask(np.transpose(img,(2,0,1)), target, mask, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -163,4 +163,11 @@ def predict(input):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_120543_E4000B20R01P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_125022_E3500B10R0005P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_133257_E4000B10R0005P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_142132_E3000B20R001P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_145504_E3500B20R001P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_153404_E4000B20R001P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_161833_E2500B20R01P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_164612_E3500B20R01P18Au2OsgdLce/MODEL.pth')

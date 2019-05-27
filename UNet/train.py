@@ -16,16 +16,17 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 from torch import optim
 from tensorboardX import SummaryWriter
-
-dir = dir_project + 'runs/' + time.strftime("%Y%b%d_%H%M%S", time.localtime())
-tb_train_writer = SummaryWriter(dir)
-
 def train_net(net,
               epochs=5,
               batch_size=1,
               lr=0.1,
               val_percent=0.05,
               gpu=False):
+
+    dir = dir_project + 'runs/' + time.strftime("%b%d_%H%M%S", time.localtime())
+    dir += '_E' + str(epochs) + 'B' + str(batch_size) + 'R' + str(lr).split('.')[-1]
+    dir += 'P' + str(WIDTH_CUTS) + 'A' + 'u2' + 'O' + 'sgd' + 'L' + 'ce'
+    tb_train_writer = SummaryWriter(dir)
 
     path_img = dir_img+'npy/'
     path_mask = dir_mask+'npy/'
@@ -123,10 +124,10 @@ def train_net(net,
             tb_train_writer.add_scalar('train loss', epoch_loss[e] / i, epoch)
 
         if 1:
-            val_dice = eval_net(net, val, tb_train_writer, gpu)
-            print('Validation Dice Coeff: {}'.format(val_dice))
-            tb_train_writer.add_scalar('validation loss', val_dice, epoch)
-    torch.save(net.state_dict(), dir_docs + 'MODEL.pth')
+            val_loss = eval_net(net, val, criterion, tb_train_writer, gpu)
+            print('Validation Coeff: {}'.format(val_loss))
+            tb_train_writer.add_scalar('validation loss', val_loss / i, epoch)
+    torch.save(net.state_dict(), dir + '/MODEL.pth')
     print("Saved model")
     tb_train_writer.close()
 
@@ -162,7 +163,7 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
                   lr=args.lr,
                   gpu=args.gpu)
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), dir_docs + 'INTERRUPTED.pth')
+        torch.save(net.state_dict(), dir + '/INTERRUPTED.pth')
         print('\nSaved interrupt')
         try:
             sys.exit(0)
@@ -170,4 +171,11 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=1000, batchsize=20, lr=0.01)
+    train(epochs=4000, batchsize=20, lr=0.01)
+    train(epochs=3500, batchsize=10, lr=0.0005)
+    train(epochs=4000, batchsize=10, lr=0.0005)
+    train(epochs=3000, batchsize=20, lr=0.001)
+    train(epochs=3500, batchsize=20, lr=0.001)
+    train(epochs=4000, batchsize=20, lr=0.001)
+    train(epochs=2500, batchsize=20, lr=0.01)
+    train(epochs=3500, batchsize=20, lr=0.01)

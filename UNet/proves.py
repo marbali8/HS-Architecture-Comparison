@@ -1,49 +1,27 @@
-import os
-from init import *
-import random
 import numpy as np
+import rasterio
+import xml.etree.ElementTree as ET
+from matplotlib.path import Path
 
-images = [f.split('.')[0] for f in os.listdir(dir_img+'npy/') if '.npy' in f]
-masks = [f.split('_mask.')[0] for f in os.listdir(dir_mask+'npy/') if '.npy' in f]
+img = rasterio.open('/imatge/mbalibrea/Documents/data/recorte1_smv95_v2.tif')
+img = rasterio.open('/imatge/mbalibrea/Documents/data/recorte1.tif')
 
-ids = [f for f in list(set(images).intersection(set(masks)))]
+tree = ET.parse('/imatge/mbalibrea/Documents/data/ROIs/ROIs/Entrenamiento/1/CASI/Mar.xml')
+root = tree.getroot()
 
-print("length ids", len(ids))
+for roi in range(1, len(root[0][0])):
+    coords = root[0][0][roi][0][0][0].text.replace('\n', '').split(' ')
+    coords = [c for c in coords if c != '']
+    coords = [float(c) for c in coords]
+    coords = [coords[i:i+2] for i in range(0,len(coords),2)]
+    print(img.index(coords[0][0], coords[0][1]))
 
-#ids = [(di, u) for di in ids for u in range(2)]
 
-#print("length ids 2", len(ids))
 
-dataset = list(ids)
-length = len(dataset)
-n = int(length * 0.05)
-random.shuffle(dataset)
-iddataset = {'train': dataset[:-n], 'val': dataset[-n:]}
+x, y = np.meshgrid(np.arange(300), np.arange(300)) # make a canvas with coordinates
+x, y = x.flatten(), y.flatten()
+points = np.vstack((x,y)).T
 
-print("length train", len(iddataset['train']))
-
-imgs = [np.load(dir_img + 'npy/' + id + '.npy') for id in ids]
-
-# need to transform from HWC to CHW
-imgs_switched = [np.transpose(img, axes=[2, 0, 1]) for img in imgs]
-imgs_normalized = [img/255 for img in imgs_switched]
-print("length imgs", len(imgs_normalized))
-
-masks = [np.load(dir_mask + 'npy/' + id + '_mask.npy') for id in ids]
-print("length masks", len(masks))
-
-train = zip(imgs_normalized, masks)
-
-def batch(train):
-    b = []
-    for i, t in enumerate(train):
-        b.append(t)
-        if (i + 1) % 5 == 0:
-            yield b
-            b = []
-
-    if len(b) > 0:
-        yield b
-
-for i, b in enumerate(batch(train)):
-    print(i, len(b), type(b))
+p = Path(tupVerts) # make a polygon
+grid = p.contains_points(points)
+mask = grid.reshape(300,300) # now you have a mask with points inside a polygon

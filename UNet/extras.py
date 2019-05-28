@@ -28,3 +28,13 @@ def eval_net(net, dataset, criterion, tb_val_writer, gpu=False):
                                 torch.argmax(mask_pred, 1).cpu().squeeze().numpy(),
                                 tb_val_writer)
     return tot / (i + 1)
+
+def augment(lr, hr, hflip=True, vflip=True):
+    hflip = hflip and random.random() < 0.5
+    vflip = vflip and random.random() < 0.5
+    def _augment(img):
+         if hflip:  img = img[:, :, ::-1]
+         if vflip:  img = img[:, ::-1, :]
+    return img
+
+    return [_augment(img) for img in img_list]

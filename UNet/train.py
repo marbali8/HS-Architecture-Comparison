@@ -25,7 +25,8 @@ def train_net(net,
 
     dir = dir_project + 'runs/' + time.strftime("%b%d_%H%M%S", time.localtime())
     dir += '_E' + str(epochs) + 'B' + str(batch_size) + 'R' + str(lr).split('.')[-1]
-    dir += 'P' + str(WIDTH_CUTS) + 'A' + 'u2' + 'O' + 'sgd' + 'L' + 'ce'
+    dir += 'P' + str(WIDTH_CUTS) + 'x' + str(WIDTH_CUTS)
+    dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + 'u2' + 'O' + 'sgd' + 'L' + 'ce'
     tb_train_writer = SummaryWriter(dir)
 
     path_img = dir_img+'npy/'
@@ -171,11 +172,12 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=4000, batchsize=20, lr=0.01)
-    train(epochs=3500, batchsize=10, lr=0.0005)
-    train(epochs=4000, batchsize=10, lr=0.0005)
-    train(epochs=3000, batchsize=20, lr=0.001)
-    train(epochs=3500, batchsize=20, lr=0.001)
-    train(epochs=4000, batchsize=20, lr=0.001)
-    train(epochs=2500, batchsize=20, lr=0.01)
+    train(epochs=3000, batchsize=20, lr=0.01)
     train(epochs=3500, batchsize=20, lr=0.01)
+    train(epochs=4000, batchsize=20, lr=0.01)
+    train(epochs=3000, batchsize=30, lr=0.01)
+    train(epochs=3500, batchsize=30, lr=0.01)
+    train(epochs=4000, batchsize=30, lr=0.01)
+    train(epochs=3000, batchsize=40, lr=0.01)
+    train(epochs=3500, batchsize=40, lr=0.01)
+    train(epochs=4000, batchsize=40, lr=0.01)

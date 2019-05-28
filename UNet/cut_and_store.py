@@ -6,6 +6,15 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt
 
+def isPower(num, of = 2, inc = 0):
+    n = of**inc
+    if n < num:
+        return isPower(num, inc = inc + 1)
+    elif n == num:
+        return True
+    else:
+        return False
+
 # NEW from get_ids_npy
 def get_ids_tif(dir_img, dir_masks):
     """Returns a list of the ids"""
@@ -16,8 +25,9 @@ def get_ids_tif(dir_img, dir_masks):
 # NEW per pasar de tif a npy tallades
 def doit():
 
+    assert isPower(WIDTH_CUTS)
     f_width = WIDTH_CUTS
-    f_height = int(f_width / 2) + 1
+    f_height = f_width
 
     if not os.path.exists(dir_img + "npy/"):
         os.makedirs(dir_img + "npy/")
@@ -31,7 +41,6 @@ def doit():
         image = rasterio.open(im_path)
         mask = rasterio.open(ma_path)
         assert image is not None, "image not found"
-        assert f_width % 2 == 0, "width has to be even"
         cols = image.width
         rows = image.height
 
@@ -39,22 +48,22 @@ def doit():
         assert mask.count == NET_CLASSES or mask.count == 1, "check the number of classes"
 
         print("Started cutting image", c+1, "/", len(list(get_ids_tif(dir_img, dir_mask))))
-        n_col = math.floor(cols/f_width)
-        n_row = math.floor(rows/f_height)
-        for j in range(n_col):
-            for i in range(n_row):
+        #n_col = math.floor(cols/f_width + f_width - COL_STRIDE)
+        #n_row = math.floor(rows/f_height + f_height - ROW_STRIDE)
+        num = 1
+        for j in range(0, cols - f_width + 1, COL_STRIDE):
+            for i in range(0, rows - f_height + 1, ROW_STRIDE):
 
-                num = j*n_row+i+1
-
+                #num = j*n_row+i+1
                 image_array = np.zeros((image.count, f_height, f_width))
 
                 for b in range(image.count):
                     band = image.read(b+1)
                     # assert band != None
-                    image_array[b,:,:] = band[i*f_height : i*f_height + f_height, j*f_width: j*f_width + f_width]
+                    image_array[b,:,:] = band[i : i + f_height, j : j + f_width]
 
                 if mask.count == 1:
-                    aux = mask.read(1)[i*f_height : i*f_height + f_height, j*f_width: j*f_width + f_width]
+                    aux = mask.read(1)[i : i + f_height, j : j + f_width]
                     mask_array = np.zeros((NET_CLASSES, f_height, f_width))
                     for (x,y), p in np.ndenumerate(aux):
                       mask_array[p, x, y] = 1
@@ -72,6 +81,7 @@ def doit():
 
                 np.save(dir_img + "npy/" + im + '_' + str(num), image_array)
                 np.save(dir_mask + "npy/" + im + '_' + str(num) + '_mask', mask_array)
+                num = num + 1
         print("Finished cutting image", c+1, "(", num, "subimages saved )")
 
 if __name__ == "__main__":

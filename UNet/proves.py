@@ -14,9 +14,7 @@ for roi in range(1, len(root[0][0])):
     coords = [c for c in coords if c != '']
     coords = [float(c) for c in coords]
     coords = [coords[i:i+2] for i in range(0,len(coords),2)]
-    print(img.index(coords[0][0], coords[0][1]))
-
-
+    print(coords[0][0], coords[0][1], img.index(coords[0][0], coords[0][1]))
 
 x, y = np.meshgrid(np.arange(300), np.arange(300)) # make a canvas with coordinates
 x, y = x.flatten(), y.flatten()

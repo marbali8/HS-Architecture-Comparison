@@ -91,7 +91,7 @@ import numpy as np # fins que no he posat això, em donava errors sense sentit x
 class ArgsPredict:
 
   # CHANGED default scale a 1
-  def __init__(self, input, output='', model=dir_docs + 'MODEL.pth', cpu=True, viz=True, no_save=True, no_crf=True, mask_th=0.5, scale=1):
+  def __init__(self, input, output='', model = dir_runs + 'MODEL.pth', cpu=True, viz=True, no_save=True, no_crf=True, mask_th=0.5, scale=1):
       self.model = model
       self.cpu = cpu
       self.viz = viz
@@ -153,7 +153,14 @@ def predict(input, model):
 
         if args.viz:
             print("Visualizing results for image {}, close to continue ...".format(fn))
-            plot_img_and_mask(np.transpose(img,(2,0,1)), target, mask, dir=args.model)
+
+            target1 = torch.from_numpy(target).squeeze()
+            mask1 = mask
+
+            criterion = nn.CrossEntropyLoss()
+            loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
+
+            plot_img_and_mask(np.transpose(img,(2,0,1)), target, mask, loss, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -163,11 +170,4 @@ def predict(input, model):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_120543_E4000B20R01P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_125022_E3500B10R0005P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_133257_E4000B10R0005P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_142132_E3000B20R001P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_145504_E3500B20R001P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_153404_E4000B20R001P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_161833_E2500B20R01P18Au2OsgdLce/MODEL.pth')
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/May25_164612_E3500B20R01P18Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/indian/May28_124952_E3000B40R01P32x32S10x10Au2OsgdLce/MODEL.pth')

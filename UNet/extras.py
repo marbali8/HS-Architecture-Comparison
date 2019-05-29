@@ -1,11 +1,12 @@
 import torch
 import torchvision
 import numpy as np
+import random
 
 from plot import *
 
 # CHANGED
-def eval_net(net, dataset, criterion, tb_val_writer, gpu=False):
+def eval_net(net, dataset, criterion, dir, tb_val_writer, gpu=False):
     """Evaluation without the densecrf with the dice coefficient"""
     net.eval()
     tot = 0
@@ -26,15 +27,20 @@ def eval_net(net, dataset, criterion, tb_val_writer, gpu=False):
             plot_img_and_mask(  img.cpu().squeeze().numpy(),
                                 torch.argmax(true_mask, 1).cpu().numpy(),
                                 torch.argmax(mask_pred, 1).cpu().squeeze().numpy(),
+                                tot, dir,
                                 tb_val_writer)
     return tot / (i + 1)
 
-def augment(lr, hr, hflip=True, vflip=True):
+def augmentation(imgs, masks, hflip=True, vflip=True):
     hflip = hflip and random.random() < 0.5
     vflip = vflip and random.random() < 0.5
-    def _augment(img):
-         if hflip:  img = img[:, :, ::-1]
-         if vflip:  img = img[:, ::-1, :]
-    return img
 
-    return [_augment(img) for img in img_list]
+    def _augment(img):
+         if hflip: img = img[:, :, ::-1]
+         if vflip: img = img[:, ::-1, :]
+         return img
+
+    _imgs = np.asarray([_augment(img) for img in imgs])
+    _masks = np.asarray([_augment(mask) for mask in masks])
+
+    return _imgs, _masks

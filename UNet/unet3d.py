@@ -29,7 +29,7 @@ class UNet3D(nn.Module):
         init_channel_number (int): number of feature maps in the first conv layer of the encoder; default: 64
     """
 
-    def __init__(self, in_channels, out_channels, final_sigmoid, interpolate=True, conv_layer_order='crg',
+    def __init__(self, in_channels, out_channels, final_sigmoid=False, interpolate=True, conv_layer_order='cbr',
                  init_channel_number=64, **kwargs):
         super(UNet3D, self).__init__()
 
@@ -43,17 +43,21 @@ class UNet3D(nn.Module):
                     num_groups=num_groups),
             Encoder(init_channel_number, 2 * init_channel_number, conv_layer_order=conv_layer_order,
                     num_groups=num_groups),
-            Encoder(2 * init_channel_number, 4 * init_channel_number, conv_layer_order=conv_layer_order,
-                    num_groups=num_groups),
-            Encoder(4 * init_channel_number, 8 * init_channel_number, conv_layer_order=conv_layer_order,
+            Encoder(2 * init_channel_number, 2 * init_channel_number, conv_layer_order=conv_layer_order,
                     num_groups=num_groups)
+            #Encoder(2 * init_channel_number, 4 * init_channel_number, conv_layer_order=conv_layer_order,
+                    #num_groups=num_groups),
+            #Encoder(4 * init_channel_number, 8 * init_channel_number, conv_layer_order=conv_layer_order,
+                    #num_groups=num_groups)
         ])
 
         self.decoders = nn.ModuleList([
-            Decoder(4 * init_channel_number + 8 * init_channel_number, 4 * init_channel_number, interpolate,
+            #Decoder(4 * init_channel_number + 8 * init_channel_number, 4 * init_channel_number, interpolate,
+                    #conv_layer_order=conv_layer_order, num_groups=num_groups),
+            Decoder(2 * init_channel_number + 2 * init_channel_number, 2 * init_channel_number, interpolate,
                     conv_layer_order=conv_layer_order, num_groups=num_groups),
-            Decoder(2 * init_channel_number + 4 * init_channel_number, 2 * init_channel_number, interpolate,
-                    conv_layer_order=conv_layer_order, num_groups=num_groups),
+            #Decoder(2 * init_channel_number + 4 * init_channel_number, 2 * init_channel_number, interpolate,
+                    #conv_layer_order=conv_layer_order, num_groups=num_groups),
             Decoder(init_channel_number + 2 * init_channel_number, init_channel_number, interpolate,
                     conv_layer_order=conv_layer_order, num_groups=num_groups)
         ])
@@ -62,13 +66,16 @@ class UNet3D(nn.Module):
         # channels to the number of labels
         self.final_conv = nn.Conv3d(init_channel_number, out_channels, 1)
 
-        if final_sigmoid:
-            self.final_activation = nn.Sigmoid()
-        else:
-            self.final_activation = nn.Softmax(dim=1)
+        #if final_sigmoid:
+            #self.final_activation = nn.Sigmoid()
+        #else:
+            #self.final_activation = nn.Softmax(dim=1)
 
     def forward(self, x):
         # encoder part
+        # from (BATCHSIZE, NET_CHANNELS, W, H) to (BATCHSIZE, 1, W, H, NET_CLASSES)
+        x = x.unsqueeze(1)
+        x = x.permute([0, 1, 3, 4, 2])
         encoders_features = []
         for encoder in self.encoders:
             x = encoder(x)
@@ -194,7 +201,7 @@ class Encoder(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, conv_kernel_size=3, apply_pooling=True,
-                 pool_kernel_size=(2, 2, 2), pool_type='max', conv_layer_order='crg', num_groups=32):
+                 pool_kernel_size=(2, 2, 2), pool_type='max', conv_layer_order='cbr', num_groups=32):
         super(Encoder, self).__init__()
         assert pool_type in ['max', 'avg']
         if apply_pooling:
@@ -213,6 +220,8 @@ class Encoder(nn.Module):
     def forward(self, x):
         if self.pooling is not None:
             x = self.pooling(x)
+        print("pre double_conv", x.shape)
+        print(self.double_conv)
         x = self.double_conv(x)
         return x
 
@@ -236,8 +245,8 @@ class Decoder(nn.Module):
         num_groups (int): number of groups for the GroupNorm
     """
 
-    def __init__(self, in_channels, out_channels, interpolate, kernel_size=3,
-                 scale_factor=(2, 2, 2), conv_layer_order='crg', num_groups=32):
+    def __init__(self, in_channels, out_channels, interpolate=True, kernel_size=3,
+                 scale_factor=(2, 2, 2), conv_layer_order='cbr', num_groups=32):
         super(Decoder, self).__init__()
         if interpolate:
             self.upsample = None
@@ -258,7 +267,7 @@ class Decoder(nn.Module):
     def forward(self, encoder_features, x):
         if self.upsample is None:
             output_size = encoder_features.size()[2:]
-            x = F.interpolate(x, size=output_size, mode='nearest')
+            x = F.interpolate(x, size=output_size, mode='bilinear')
         else:
             x = self.upsample(x)
         # concatenate encoder_features (encoder path) with the upsampled input across channel dimension
@@ -267,6 +276,6 @@ class Decoder(nn.Module):
         return x
 
 def get_model():
-    return UNet3D(in_channels=1, out_channels=2, final_sigmoid=False,
-                  interpolate=True, conv_layer_order='crg',
-                  init_channel_number=32)
+    return UNet3D(in_channels=INPUT_BANDS, out_channels=NET_CLASSES, final_sigmoid=False,
+                  interpolate=True, conv_layer_order='cbr',
+                  init_channel_number=64)

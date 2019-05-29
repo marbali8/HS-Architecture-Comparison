@@ -1,5 +1,6 @@
 from init import *
 from unet import *
+from unet3d import *
 from utils1 import *
 from utils2 import *
 from extras import *
@@ -21,12 +22,16 @@ def train_net(net,
               batch_size=1,
               lr=0.1,
               val_percent=0.05,
-              gpu=False):
+              gpu=False,
+              augment=True):
 
-    dir = dir_project + 'runs/' + time.strftime("%b%d_%H%M%S", time.localtime())
-    dir += '_E' + str(epochs) + 'B' + str(batch_size) + 'R' + str(lr).split('.')[-1]
+    net_name = "u3d2" if "3d" in net.__class__.__name__ else "u2"
+    dir = dir_runs + time.strftime("%b%d_%H%M%S", time.localtime())
+    dir += '_E' + str(epochs) + 'B' + str(batch_size) + ('+' if augment else '')
+    dir += 'R' + str(lr).split('.')[-1]
     dir += 'P' + str(WIDTH_CUTS) + 'x' + str(WIDTH_CUTS)
-    dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + 'u2' + 'O' + 'sgd' + 'L' + 'ce'
+    dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + net_name
+    dir += 'O' + 'sgd' + 'L' + 'ce'
     tb_train_writer = SummaryWriter(dir)
 
     path_img = dir_img+'npy/'
@@ -41,8 +46,8 @@ def train_net(net,
                   str(lr) + ' lr;\n' +
                   str(len(iddataset['train'])) + ' training size;\n' +
                   str(len(iddataset['val'])) + ' validation size;\n' +
-                  str(WIDTH_CUTS) + ' width input patches;\n'
-                  'UNET 2 deep; SGD, CrossEntropyLoss'
+                  str(WIDTH_CUTS) + ' width input patches;\n' +
+                  net.__class__.__name__ + ' 2 deep; SGD, CrossEntropyLoss'
                   )
     # posar SGD parameters de momentum i tal?
 
@@ -83,9 +88,10 @@ def train_net(net,
         for i, b in enumerate(batch(train, batch_size)):
             imgs = np.array([i[0] for i in b]).astype(np.float32)
             true_masks = np.array([i[1] for i in b])
+            imgs, true_masks = augmentation(imgs, true_masks)
 
             imgs = torch.from_numpy(imgs)
-            #print("shape of batch before net", imgs.shape) # (BATCHSIZE, NET_CHANNELS, W/2, H/2)
+            #print("shape of batch before net", imgs.shape) # (BATCHSIZE, NET_CHANNELS, W, H)
             true_masks = torch.from_numpy(true_masks).squeeze()
 
             if gpu and torch.cuda.is_available(): # CHANGED
@@ -119,13 +125,13 @@ def train_net(net,
             plt.xlabel('epochs')
             plt.ylabel('cross entropy loss')
             plt.plot(range(len(epoch_loss)), epoch_loss / i)
-            plt.savefig(dir_docs + 'loss.png', bbox_inches='tight')
+            plt.savefig(dir + 'loss.png', bbox_inches='tight')
             plt.close()
         else:
             tb_train_writer.add_scalar('train loss', epoch_loss[e] / i, epoch)
 
         if 1:
-            val_loss = eval_net(net, val, criterion, tb_train_writer, gpu)
+            val_loss = eval_net(net, val, criterion, dir, tb_train_writer, gpu)
             print('Validation Coeff: {}'.format(val_loss))
             tb_train_writer.add_scalar('validation loss', val_loss / i, epoch)
     torch.save(net.state_dict(), dir + '/MODEL.pth')
@@ -136,18 +142,23 @@ def train_net(net,
 class ArgsTrain:
 
   # CHANGED tret img_scale
-  def __init__(self, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
+  def __init__(self, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=True):
       self.epochs = epochs
       self.batchsize = batchsize
       self.lr = lr
       self.gpu = gpu
       self.load = load
+      self.augment = augment
 
 # CHANGED tret img_scale
-def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
+def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=True):
 
-    args = ArgsTrain(epochs=epochs, batchsize=batchsize, lr=lr, gpu=gpu, load=load)
-    net = UNet(INPUT_BANDS, NET_CLASSES)
+    args = ArgsTrain(epochs=epochs, batchsize=batchsize, lr=lr, gpu=gpu, load=load, augment=True)
+    assert net == 'unet' or net == 'unet3d'
+    if net == 'unet':
+        net = UNet(INPUT_BANDS, NET_CLASSES)
+    else:
+        net = UNet3D(INPUT_BANDS, NET_CLASSES)
 
     if args.load:
         net.load_state_dict(torch.load(args.load))
@@ -162,7 +173,8 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
                   epochs=args.epochs,
                   batch_size=args.batchsize,
                   lr=args.lr,
-                  gpu=args.gpu)
+                  gpu=args.gpu,
+                  augment=True)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), dir + '/INTERRUPTED.pth')
         print('\nSaved interrupt')
@@ -172,12 +184,14 @@ def train(epochs=5, batchsize=10, lr=0.1, gpu=True, load=False):
             os._exit(0)
 
 if __name__ == "__main__":
-    train(epochs=3000, batchsize=20, lr=0.01)
-    train(epochs=3500, batchsize=20, lr=0.01)
-    train(epochs=4000, batchsize=20, lr=0.01)
-    train(epochs=3000, batchsize=30, lr=0.01)
-    train(epochs=3500, batchsize=30, lr=0.01)
-    train(epochs=4000, batchsize=30, lr=0.01)
-    train(epochs=3000, batchsize=40, lr=0.01)
-    train(epochs=3500, batchsize=40, lr=0.01)
-    train(epochs=4000, batchsize=40, lr=0.01)
+    # train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.01)
+    # train(net = 'unet3d', epochs=3000, batchsize=22, lr=0.01)
+    # train(net = 'unet3d', epochs=3000, batchsize=25, lr=0.01)
+    # train(net = 'unet3d', epochs=3000, batchsize=27, lr=0.01)
+    # train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.01)
+    train(net = 'unet', epochs=3000, batchsize=22, lr=0.01)
+    train(net = 'unet', epochs=3000, batchsize=25, lr=0.01)
+    train(net = 'unet', epochs=3000, batchsize=27, lr=0.01)
+    train(net = 'unet', epochs=3000, batchsize=22, lr=0.001)
+    train(net = 'unet', epochs=3000, batchsize=25, lr=0.001)
+    train(net = 'unet', epochs=3000, batchsize=27, lr=0.001)

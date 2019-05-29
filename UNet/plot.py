@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 rgb_indianpines = [[255,255,255], [255,254,137], [3,28,241], [255,89,1], [5,255,133], [255,2,251], [89,1,255], [3,171,255], [12,255,7], [172,175,84], [160,78,158], [101,173,255], [60,91,112], [104,192,63], [139,69,46], [119,255,172], [254,255,3]]
 
 # CHANGED a lot xd
-def plot_img_and_mask(img, target, mask, tb_val_writer=None, dir=dir_docs): # CHANGED suposant format chw i mask i target amb valors de 0 a NET_CLASSES
+def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANGED suposant format chw i mask i target amb valors de 0 a NET_CLASSES
     #print("max img", np.max(img), "unique target", np.unique(target), "unique mask", np.unique(mask))
 
     fig = plt.figure()
+    fig.suptitle(str(loss))
     a = fig.add_subplot(1, 3, 1)
     img = np.transpose(img, axes=[1,2,0])
     a.set_title('Input image')

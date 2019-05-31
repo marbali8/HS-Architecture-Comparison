@@ -44,9 +44,7 @@ class UNet3D(nn.Module):
             Encoder(init_channel_number, 2 * init_channel_number, conv_layer_order=conv_layer_order,
                     num_groups=num_groups),
             Encoder(2 * init_channel_number, 2 * init_channel_number, conv_layer_order=conv_layer_order,
-                    num_groups=num_groups)
-            #Encoder(2 * init_channel_number, 4 * init_channel_number, conv_layer_order=conv_layer_order,
-                    #num_groups=num_groups),
+                    num_groups=num_groups) # era 2 4
             #Encoder(4 * init_channel_number, 8 * init_channel_number, conv_layer_order=conv_layer_order,
                     #num_groups=num_groups)
         ])
@@ -55,9 +53,7 @@ class UNet3D(nn.Module):
             #Decoder(4 * init_channel_number + 8 * init_channel_number, 4 * init_channel_number, interpolate,
                     #conv_layer_order=conv_layer_order, num_groups=num_groups),
             Decoder(2 * init_channel_number + 2 * init_channel_number, 2 * init_channel_number, interpolate,
-                    conv_layer_order=conv_layer_order, num_groups=num_groups),
-            #Decoder(2 * init_channel_number + 4 * init_channel_number, 2 * init_channel_number, interpolate,
-                    #conv_layer_order=conv_layer_order, num_groups=num_groups),
+                    conv_layer_order=conv_layer_order, num_groups=num_groups), # era 2 4 2
             Decoder(init_channel_number + 2 * init_channel_number, init_channel_number, interpolate,
                     conv_layer_order=conv_layer_order, num_groups=num_groups)
         ])
@@ -73,9 +69,8 @@ class UNet3D(nn.Module):
 
     def forward(self, x):
         # encoder part
-        # from (BATCHSIZE, NET_CHANNELS, W, H) to (BATCHSIZE, 1, W, H, NET_CLASSES)
-        x = x.unsqueeze(1)
-        x = x.permute([0, 1, 3, 4, 2])
+        # from (BATCHSIZE, NET_CHANNELS, W, H) to (BATCHSIZE, NET_CHANNELS, W, H, 1)
+        x = x.unsqueeze(4)
         encoders_features = []
         for encoder in self.encoders:
             x = encoder(x)
@@ -85,6 +80,7 @@ class UNet3D(nn.Module):
         # remove the last encoder's output from the list
         # !!remember: it's the 1st in the list
         encoders_features = encoders_features[1:]
+        #print("after all encoders", x.shape)
 
         # decoder part
         for decoder, encoder_features in zip(self.decoders, encoders_features):
@@ -96,10 +92,10 @@ class UNet3D(nn.Module):
 
         # apply final_activation (i.e. Sigmoid or Softmax) only for prediction. During training the network outputs
         # logits and it's up to the user to normalize it before visualising with tensorboard or computing validation metric
-        if not self.training:
-            x = self.final_activation(x)
+        #if not self.training:
+            #x = self.final_activation(x)
 
-        return x
+        return x.squeeze(4)
 
 
 class AbstractConv(nn.Sequential):
@@ -220,8 +216,6 @@ class Encoder(nn.Module):
     def forward(self, x):
         if self.pooling is not None:
             x = self.pooling(x)
-        print("pre double_conv", x.shape)
-        print(self.double_conv)
         x = self.double_conv(x)
         return x
 
@@ -266,8 +260,10 @@ class Decoder(nn.Module):
 
     def forward(self, encoder_features, x):
         if self.upsample is None:
-            output_size = encoder_features.size()[2:]
+            output_size = encoder_features.size()[2:4]
+            x = x.squeeze(4)
             x = F.interpolate(x, size=output_size, mode='bilinear')
+            x = x.unsqueeze(4)
         else:
             x = self.upsample(x)
         # concatenate encoder_features (encoder path) with the upsampled input across channel dimension

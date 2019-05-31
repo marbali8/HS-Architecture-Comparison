@@ -25,7 +25,7 @@ def train_net(net,
               gpu=False,
               augment=True):
 
-    net_name = "u3d2" if "3d" in net.__class__.__name__ else "u2"
+    net_name = "u3d2" if "3D" in net.__class__.__name__ else "u2"
     dir = dir_runs + time.strftime("%b%d_%H%M%S", time.localtime())
     dir += '_E' + str(epochs) + 'B' + str(batch_size) + ('+' if augment else '')
     dir += 'R' + str(lr).split('.')[-1]
@@ -184,14 +184,8 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
             os._exit(0)
 
 if __name__ == "__main__":
-    # train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.01)
-    # train(net = 'unet3d', epochs=3000, batchsize=22, lr=0.01)
-    # train(net = 'unet3d', epochs=3000, batchsize=25, lr=0.01)
-    # train(net = 'unet3d', epochs=3000, batchsize=27, lr=0.01)
-    # train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.01)
-    train(net = 'unet', epochs=3000, batchsize=22, lr=0.01)
-    train(net = 'unet', epochs=3000, batchsize=25, lr=0.01)
-    train(net = 'unet', epochs=3000, batchsize=27, lr=0.01)
-    train(net = 'unet', epochs=3000, batchsize=22, lr=0.001)
-    train(net = 'unet', epochs=3000, batchsize=25, lr=0.001)
-    train(net = 'unet', epochs=3000, batchsize=27, lr=0.001)
+    train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.01)
+    train(net = 'unet3d', epochs=3000, batchsize=22, lr=0.01)
+    train(net = 'unet3d', epochs=3000, batchsize=25, lr=0.01)
+    train(net = 'unet3d', epochs=3000, batchsize=27, lr=0.01)
+    train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.01)

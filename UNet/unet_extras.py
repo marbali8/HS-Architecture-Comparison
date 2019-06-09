@@ -83,19 +83,3 @@ class outconv(nn.Module):
     def forward(self, x):
         x = self.conv(x)
         return x
-
-# NEW: canvia els valors de la matriu (BATCHSIZE, NET_CLASSES, HEIGHT, WIDTH)
-# a binaris (1 on hi hagi maxima probabilitat)
-#class prob_to_bin(nn.Module):
-    #def __init__(self):
-      #super(prob_to_bin, self).__init__()
-
-    #def forward(self, x):
-# def prob_to_bin(x):
-#   cl = torch.argmax(x.to(torch.int64), 1) # should have size (BATCHSIZE, HEIGHT, WIDTH) with numbers from 0 to NET_CLASSES
-#   y = x.clone().to(torch.int64).cpu().detach().numpy()
-#   for (batch, _class, row, col), _ in np.ndenumerate(y):
-#     c = cl[batch, row, col]
-#     y[batch, c, row, col] = c == _class
-#   #print("torch.unique", len(np.unique(y)))
-#   return y

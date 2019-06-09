@@ -1,8 +1,10 @@
 from init import *
 from unet import *
+from unet3d import *
 from utils1 import *
 from utils2 import *
 from plot import *
+from extras import *
 
 import os
 
@@ -10,6 +12,7 @@ import numpy as np
 import torch
 from torchvision import transforms
 from PIL import Image
+import rasterio
 
 def predict_img(net,
                 full_img,
@@ -20,42 +23,24 @@ def predict_img(net,
 
     net = net.double()
     net.eval()
-    img_height = full_img.shape[1] # CHANGED PIL to npy
-    img_width = full_img.shape[0] # CHANGED PIL to npy
 
-    #img = resize_and_crop(full_img, scale=scale_factor)
     img = normalize(full_img)
 
-    #left_square, right_square = split_img_into_squares(img)
-
-    #left_square = hwc_to_chw(left_square)
-    #right_square = hwc_to_chw(right_square)
-    img = hwc_to_chw(img)
-
-    #X_left = torch.from_numpy(left_square).unsqueeze(0)
-    #X_right = torch.from_numpy(right_square).unsqueeze(0)
     X = torch.from_numpy(img).unsqueeze(0).double()
 
     if use_gpu and torch.cuda.is_available(): # CHANGED
-        # X_left = X_left.cuda()
-        # X_right = X_right.cuda()
         X = X.cuda()
 
     with torch.no_grad():
-        #output_left = net(X_left)
-        #output_right = net(X_right)
         output = net(X)
         # NEW pq ara es una imatge de [NET_CLASSES, H, W] i jo vull [1, H, W]
         # on cada pixel sigui el num de la classe
         output = torch.argmax(output, 1)
 
-        #left_mask_np = left_probs.squeeze()
-        #right_mask_np = right_probs.squeeze()
         mask_np = output.squeeze()
 
         #print(left_mask_np.shape, right_mask_np.shape)
 
-    #full_mask = merge_masks(left_mask_np, right_mask_np, img_width)
     full_mask = mask_np
 
     if use_dense_crf:
@@ -82,11 +67,6 @@ def get_output_filenames(input, output, extension=''):
 def mask_to_image(mask):
     return Image.fromarray((mask * 255).astype(np.uint8))
 
-#import gdal # CHANGED
-import rasterio # CHANGED
-from PIL import Image
-import numpy as np # fins que no he posat això, em donava errors sense sentit xd
-
 # CHANGED substitut del parser
 class ArgsPredict:
 
@@ -108,17 +88,27 @@ def predict(input, model):
     # CHANGED
     out_files = get_output_filenames([args.input], [args.output], extension='jpg')
 
-    net = UNet(n_channels=INPUT_BANDS, n_classes=NET_CLASSES)
-
     print("Loading model {}".format(args.model))
 
     if not args.cpu:
         print("Using CUDA version of the net, prepare your GPU !")
+        model = torch.load(args.model)
+        l = [1 for key in model.keys() if 'encoders' in key]
+        if len(l) > 0:
+            net = UNet3D(INPUT_BANDS, NET_CLASSES)
+        else:
+            net = UNet(n_channels=INPUT_BANDS, n_classes=NET_CLASSES)
         net.cuda()
-        net.load_state_dict(torch.load(args.model))
+        net.load_state_dict(model)
     else:
+        model = torch.load(args.model, map_location='cpu')
+        l = [1 for key in model.keys() if 'encoders' in key]
+        if len(l) > 0:
+            net = UNet3D(INPUT_BANDS, NET_CLASSES)
+        else:
+            net = UNet(n_channels=INPUT_BANDS, n_classes=NET_CLASSES)
         net.cpu()
-        net.load_state_dict(torch.load(args.model, map_location='cpu'))
+        net.load_state_dict(model)
         print("Using CPU version of the net, this may be very slow")
 
     print("Model loaded !")
@@ -128,10 +118,9 @@ def predict(input, model):
 
         # CHANGED per si es np o tif + per imprimir tambe el target
 
-        img = rasterio.open(fn).read()
+        img = rasterio.open(fn).read() # chw
         target = rasterio.open(fn.replace("/images/", "/masks/").replace(".", "_mask."))
         target = target.read()
-        img = np.transpose(img,(1,2,0)) # CHANGED chw to hwc
 
         if img.any() == None or target.any() == None:
           img = np.load(fn)
@@ -140,9 +129,6 @@ def predict(input, model):
           if img.any() == None or target.any() == None:
             print("could not open image")
             exit(1)
-
-        if img.shape[1] > img.shape[0]: # CHANGED per npy
-            print("Error: image height larger than the width")
 
         mask = predict_img(net=net,
                            full_img=img,
@@ -157,10 +143,14 @@ def predict(input, model):
             target1 = torch.from_numpy(target).squeeze()
             mask1 = mask
 
-            criterion = nn.CrossEntropyLoss()
-            loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
+            #criterion = nn.CrossEntropyLoss()
+            #loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
+            # print(target1.shape, mask1.shape)
+            train_mask = loss_mask(target, type = 'test')
+            loss = balanced_score(train_mask, mask1)
+            print(loss)
 
-            plot_img_and_mask(np.transpose(img,(2,0,1)), target, mask, loss, dir=args.model)
+            plot_img_and_mask(img, target, mask, loss, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -170,4 +160,4 @@ def predict(input, model):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_project + 'runs/indian/May28_124952_E3000B40R01P32x32S10x10Au2OsgdLce/MODEL.pth')
+    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_runs + 'Jun01_021118_E3000B27+R01P32x32S10x10Au2OsgdLce/MODEL.pth')

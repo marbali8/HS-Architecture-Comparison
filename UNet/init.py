@@ -11,6 +11,7 @@ ROW_STRIDE = 10
 # HYPERPARAMETERS
 NET_CLASSES = 16+1
 INPUT_BANDS = 220
+VAL_PERCENT = 0.20
 
 # cas per maspalomas recorte1 de ground truth
 #dir_runs = '/imatge/mbalibrea/work/runs/maspalomas/'
@@ -22,3 +23,4 @@ INPUT_BANDS = 220
 # HYPERPARAMETERS
 #NET_CLASSES = 12+1
 #INPUT_BANDS = 68
+# VAL_PERCENT = 0.20

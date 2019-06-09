@@ -31,21 +31,18 @@ def train_net(net,
     dir += 'R' + str(lr).split('.')[-1]
     dir += 'P' + str(WIDTH_CUTS) + 'x' + str(WIDTH_CUTS)
     dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + net_name
-    dir += 'O' + 'sgd' + 'L' + 'ce'
+    dir += 'O' + 'sgd' + 'L' + 'ce' + 'AC' + 'bal'
     tb_train_writer = SummaryWriter(dir)
 
     path_img = dir_img+'npy/'
     path_mask = dir_mask+'npy/'
     ids = get_ids_npy(path_img, path_mask)
-    #ids = split_ids(ids) # CHANGED ja no parteixo les imatges en 2
-
-    iddataset = split_train_val(ids, val_percent)
 
     tb_train_writer.add_text('info', str(epochs) + ' epochs;\n' +
                   str(batch_size) + ' batch size;\n' +
                   str(lr) + ' lr;\n' +
-                  str(len(iddataset['train'])) + ' training size;\n' +
-                  str(len(iddataset['val'])) + ' validation size;\n' +
+                  # str(len(iddataset['train'])) + ' training size;\n' +
+                  # str(len(iddataset['val'])) + ' validation size;\n' +
                   str(WIDTH_CUTS) + ' width input patches;\n' +
                   net.__class__.__name__ + ' 2 deep; SGD, CrossEntropyLoss'
                   )
@@ -56,15 +53,13 @@ def train_net(net,
         Epochs: {}
         Batch size: {}
         Learning rate: {}
-        Training size: {}
-            ({} batches needed each epoch)
-        Validation size: {}
         CUDA: {}
-    '''.format(epochs, batch_size, lr, len(iddataset['train']),
-               math.ceil(len(iddataset['train'])/batch_size),
-               len(iddataset['val']), str(gpu)))
+    '''.format(epochs, batch_size, lr, #len(iddataset['train']),
+               # math.ceil(len(iddataset['train'])/batch_size),
+               # len(iddataset['val']),
+               str(gpu)))
 
-    N_train = len(iddataset['train'])
+    # N_train = len(iddataset['train'])
 
     optimizer = optim.SGD(net.parameters(),
                           lr=lr,
@@ -72,8 +67,10 @@ def train_net(net,
                           weight_decay=0.0005)
 
     # esta loss fa logsoftmax i calcula pixel a pixel i despres fa la mitja
-    criterion = nn.CrossEntropyLoss() # CHANGED
+    weights = torch.from_numpy(get_weights('train'))
+    criterion = nn.CrossEntropyLoss(weight=weights.float(), ignore_index=-1) # CHANGED
 
+    iddataset = list(ids)
     epoch_loss = np.zeros(epochs) # NEW
 
     # cada epoca, pasara les mateixes imatges per la xarxa
@@ -81,22 +78,23 @@ def train_net(net,
         print('Starting epoch {}/{}.'.format(epoch + 1, epochs))
         net.train()
         # reset the generators
-        train = get_imgs_and_masks(iddataset['train'], path_img, path_mask)
-        val = get_imgs_and_masks(iddataset['val'], path_img, path_mask)
+        train = get_imgs_and_masks(iddataset, path_img, path_mask)
 
         # i de 0 a ceil(length(train)/batch_size)-1
         for i, b in enumerate(batch(train, batch_size)):
             imgs = np.array([i[0] for i in b]).astype(np.float32)
             true_masks = np.array([i[1] for i in b])
             imgs, true_masks = augmentation(imgs, true_masks)
+            # now true_masks will be [BATCHSIZE, W, H]
+            train_masks = np.array([loss_mask(mask, type='train') for mask in true_masks])
 
             imgs = torch.from_numpy(imgs)
             #print("shape of batch before net", imgs.shape) # (BATCHSIZE, NET_CHANNELS, W, H)
-            true_masks = torch.from_numpy(true_masks).squeeze()
+            train_masks = torch.from_numpy(train_masks).squeeze()
 
             if gpu and torch.cuda.is_available(): # CHANGED
                 imgs = imgs.cuda()
-                true_masks = true_masks.cuda()
+                train_masks = train_masks.cuda()
 
             masks_pred = net(imgs) # shape (BATCHSIZE, NET_CLASSES, W, H)
             #print("shape of batch after net", masks_pred.shape)
@@ -104,9 +102,7 @@ def train_net(net,
 
             #print(masks_pred.shape, true_masks.shape)
 
-            #print("shape of true masks", true_masks.shape, "are they binary?", len(torch.unique(true_masks)) == 2)
-            #print("shape of pred masks", masks_pred.shape, "are they binary?", len(torch.unique(masks_pred)) == 2)
-            loss = criterion(masks_pred, torch.argmax(true_masks, 1).long())
+            loss = criterion(masks_pred, train_masks.long())
             epoch_loss[e] += loss.item()
 
             # print('{0:.4f} --- loss: {1:.6f}'.format(i * batch_size / N_train, loss.item()))
@@ -131,9 +127,9 @@ def train_net(net,
             tb_train_writer.add_scalar('train loss', epoch_loss[e] / i, epoch)
 
         if 1:
-            val_loss = eval_net(net, val, criterion, dir, tb_train_writer, gpu)
+            val_loss = eval_net(net, iddataset, dir, tb_train_writer, gpu)
             print('Validation Coeff: {}'.format(val_loss))
-            tb_train_writer.add_scalar('validation loss', val_loss / i, epoch)
+            tb_train_writer.add_scalar('validation coeff', val_loss / i, epoch)
     torch.save(net.state_dict(), dir + '/MODEL.pth')
     print("Saved model")
     tb_train_writer.close()
@@ -184,8 +180,4 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
             os._exit(0)
 
 if __name__ == "__main__":
-    train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.01)
-    train(net = 'unet3d', epochs=3000, batchsize=22, lr=0.01)
-    train(net = 'unet3d', epochs=3000, batchsize=25, lr=0.01)
-    train(net = 'unet3d', epochs=3000, batchsize=27, lr=0.01)
-    train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.01)
+    train(net = 'unet', epochs=1, batchsize=10, lr=0.1)

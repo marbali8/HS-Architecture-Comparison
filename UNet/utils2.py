@@ -1,4 +1,5 @@
 from utils1 import *
+from init import *
 
 import os
 import numpy as np
@@ -10,34 +11,13 @@ def get_ids_npy(dir_img, dir_masks):
     masks = [f.split('_mask.')[0] for f in os.listdir(dir_masks) if '.npy' in f]
     return (f for f in list(set(images).intersection(set(masks))))
 
-
-def split_ids(ids, n=2):
-    """Split each id in n, creating n tuples (id, k) for each id"""
-    """Fa això perquè parteix cada imatge (id) en 2 (n=2)"""
-    return ((di, u) for di in ids for u in range(n))
-
 # CHANGED adaptat a npy
 def to_cropped_imgs(ids, dir, suffix):
     """From a list of tuples, returns the correct cropped img"""
     for id in ids: #for id, pos in ids:
 
         f = np.load(dir + id + suffix)
-
-        #im = resize_and_crop(f)
-        #if first:
-          #print("img after resize_and_crop", im.shape) # formato HWC
-          #first = False
         yield f #get_square(im, pos) CHANGED
-
-# NEW
-#def test_random_masks(ids, dir, suffix, scale, net_classes):
-    #for id, pos in ids:
-        #f = np.load(dir + id + suffix)
-
-        #f = np.random.randint(2, size=(f.shape[0], f.shape[1], net_classes))
-
-        #im = resize_and_crop(f, scale=scale)
-        #yield get_square(im, pos)
 
 # CHANGED per adaptar a npy
 def get_imgs_and_masks(ids, dir_img, dir_mask):
@@ -45,9 +25,7 @@ def get_imgs_and_masks(ids, dir_img, dir_mask):
 
     imgs = to_cropped_imgs(ids, dir_img, '.npy') # CHANGED to npy
 
-    # need to transform from HWC to CHW
-    imgs_switched = map(hwc_to_chw, imgs)
-    imgs_normalized = map(normalize, imgs_switched)
+    imgs_normalized = map(normalize, imgs)
 
     masks = to_cropped_imgs(ids, dir_mask, '_mask.npy') # CHANGED to npy
 
@@ -58,8 +36,17 @@ def get_imgs_and_masks(ids, dir_img, dir_mask):
 
     return zip(imgs_normalized, masks) # ajunta en una tupla cada img amb la mask
 
+# gets the weights in the format for loss or accuracy
+def get_weights(type, loss_mask=None, im = ""):
+    weights = [f for f in os.listdir(dir_mask + "npy/") if im in f and "_class_weights" in f]
+    w = np.load(dir_mask + "npy/" + weights[0])
 
-def get_full_img_and_mask(id, dir_img, dir_mask):
-    im = np.load(dir_img + id + '.npy') # CHANGED to npy
-    mask = np.load(dir_mask + id + '_mask.npy') # CHANGED to npy
-    return np.array(im), np.array(mask)
+    assert type == 'train' or type == 'test'
+    if type == 'train':
+        return w
+    else:
+        assert loss_mask.any() != None
+        new_w = np.zeros(loss_mask.shape)
+        for i, p in np.ndenumerate(loss_mask):
+            new_w[i[0], i[1]] = w[int(p)]
+        return new_w

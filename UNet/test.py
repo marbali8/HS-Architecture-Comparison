@@ -18,7 +18,7 @@ def isPower(num, of = 2, inc = 0):
 # NEW from get_ids_npy
 def get_ids_tif(dir_img, dir_masks):
     """Returns a list of the ids"""
-    images = [f.split('.')[0] for f in os.listdir(dir_img) if '.tif' in f]
+    images = [('recorte1.npy').split('.')[0]]
     masks = [f.split('_mask.')[0] for f in os.listdir(dir_masks) if '_mask.tif' in f]
     return (f for f in list(set(images).intersection(set(masks))))
 
@@ -74,18 +74,18 @@ def doit():
 
     for c,im in enumerate(get_ids_tif(dir_img, dir_mask)):
 
-        im_path = dir_img + im + '.tif'
+        im_path = dir_img + im + '.npy'
         ma_path = dir_mask + im + '_mask.tif'
-        image = rasterio.open(im_path)
+        image = np.load(im_path)
         mask = rasterio.open(ma_path)
         assert image is not None, "image not found"
-        cols = image.width
-        rows = image.height
+        cols = mask.width
+        rows = mask.height
 
-        assert image.count == INPUT_BANDS, "check the number of bands"
+        #assert image.count == INPUT_BANDS, "check the number of bands"
         assert mask.count == 1, "check the number of classes"
 
-        train_mask, weights = new_split_train_val(image.read(), mask.read(1))
+        train_mask, weights = new_split_train_val(image, mask.read(1))
 
         print("Started cutting image", c+1, "/", len(list(get_ids_tif(dir_img, dir_mask))))
         num = 1
@@ -93,11 +93,11 @@ def doit():
             for i in range(0, rows - f_height + 1, ROW_STRIDE):
 
                 #num = j*n_row+i+1
-                image_array = np.zeros((image.count, f_height, f_width)) # CHW
+                image_array = np.zeros((image.shape[0], f_height, f_width)) # CHW
 
                 # image
-                for b in range(image.count):
-                    band = image.read(b+1)
+                for b in range(image.shape[0]):
+                    band = image[b,:,:]
                     # assert band != None
                     image_array[b,:,:] = band[i : i + f_height, j : j + f_width]
 

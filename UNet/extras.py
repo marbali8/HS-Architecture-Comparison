@@ -11,6 +11,9 @@ from init import *
 # NEW
 def balanced_score(target, prediction):
 
+    if np.unique(target) == [-1]:
+        return 0
+
     t = target.flatten()
     p = prediction.flatten()
     w = get_weights('test', target).flatten()
@@ -27,32 +30,28 @@ def balanced_score(target, prediction):
     return balanced_accuracy_score(t, p, w)
 
 # CHANGED
-def eval_net(net, iddataset, dir, tb_val_writer, gpu=False):
+def eval_net(net, val, dir, tb_val_writer, gpu=False):
     """Evaluation without the densecrf with the dice coefficient"""
     net.eval()
     tot = 0
-    val = get_imgs_and_masks(iddataset, dir_img+'npy/', dir_mask+'npy/')
     for i, b in enumerate(val):
         img = b[0].astype(np.float32)
         true_mask = b[1]
         train_mask = loss_mask(true_mask, type = 'test')
 
         img = torch.from_numpy(img).unsqueeze(0)
-        train_mask = torch.from_numpy(train_mask).unsqueeze(0)
 
         if gpu and torch.cuda.is_available(): # CHANGED
             img = img.cuda()
-            train_mask = train_mask.cuda()
 
         mask_pred = net(img) # CHANGED
         mask_pred = torch.argmax(mask_pred, 1).squeeze()
-        train_mask = train_mask.data.long().cpu().detach().numpy()
         mask_pred = mask_pred.data.cpu().detach().numpy()
         tot += balanced_score(train_mask, mask_pred)
         # tot += criterion(mask_pred, torch.argmax(true_mask, 1).long()).item()
         if i == 0:
             plot_img_and_mask(  img.cpu().squeeze().numpy(),
-                                train_mask,
+                                abs(true_mask),
                                 mask_pred,
                                 tot, dir,
                                 tb_val_writer)

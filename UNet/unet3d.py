@@ -62,10 +62,10 @@ class UNet3D(nn.Module):
         # channels to the number of labels
         self.final_conv = nn.Conv3d(init_channel_number, out_channels, 1)
 
-        #if final_sigmoid:
-            #self.final_activation = nn.Sigmoid()
-        #else:
-            #self.final_activation = nn.Softmax(dim=1)
+        if final_sigmoid:
+            self.final_activation = nn.Sigmoid()
+        else:
+            self.final_activation = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
         # encoder part

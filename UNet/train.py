@@ -17,26 +17,21 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 from torch import optim
 from tensorboardX import SummaryWriter
-def train_net(net,
+
+def train_net(net, dir,
               epochs=5,
               batch_size=1,
               lr=0.1,
               val_percent=0.05,
-              gpu=False,
+              gpu=True,
               augment=True):
 
-    net_name = "u3d2" if "3D" in net.__class__.__name__ else "u2"
-    dir = dir_runs + time.strftime("%b%d_%H%M%S", time.localtime())
-    dir += '_E' + str(epochs) + 'B' + str(batch_size) + ('+' if augment else '')
-    dir += 'R' + str(lr).split('.')[-1]
-    dir += 'P' + str(WIDTH_CUTS) + 'x' + str(WIDTH_CUTS)
-    dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + net_name
-    dir += 'O' + 'sgd' + 'L' + 'ce' + 'AC' + 'bal'
     tb_train_writer = SummaryWriter(dir)
 
     path_img = dir_img+'npy/'
     path_mask = dir_mask+'npy/'
     ids = get_ids_npy(path_img, path_mask)
+    iddataset = gettwo(ids)
 
     tb_train_writer.add_text('info', str(epochs) + ' epochs;\n' +
                   str(batch_size) + ' batch size;\n' +
@@ -66,11 +61,12 @@ def train_net(net,
                           momentum=0.9,
                           weight_decay=0.0005)
 
-    # esta loss fa logsoftmax i calcula pixel a pixel i despres fa la mitja
+    # esta loss calcula pixel a pixel i despres fa la mitja
     weights = torch.from_numpy(get_weights('train'))
-    criterion = nn.CrossEntropyLoss(weight=weights.float(), ignore_index=-1) # CHANGED
+    if gpu and torch.cuda.is_available():
+        weights = weights.cuda()
+    criterion = nn.NLLLoss(weight=weights.float(), ignore_index=-1) # CHANGED
 
-    iddataset = list(ids)
     epoch_loss = np.zeros(epochs) # NEW
 
     # cada epoca, pasara les mateixes imatges per la xarxa
@@ -78,7 +74,8 @@ def train_net(net,
         print('Starting epoch {}/{}.'.format(epoch + 1, epochs))
         net.train()
         # reset the generators
-        train = get_imgs_and_masks(iddataset, path_img, path_mask)
+        train = get_imgs_and_masks(iddataset[0], path_img, path_mask)
+        val = get_imgs_and_masks(iddataset[1], path_img, path_mask)
 
         # i de 0 a ceil(length(train)/batch_size)-1
         for i, b in enumerate(batch(train, batch_size)):
@@ -110,8 +107,8 @@ def train_net(net,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if tb_train_writer == None:
-                print(str(i+1), end=' ', flush = True)
+            #if tb_train_writer == None:
+            print(str(i+1), end=' ', flush = True)
 
         print(flush = False)
         print('Epoch finished ! Loss: {}'.format(epoch_loss[e] / i))
@@ -127,7 +124,7 @@ def train_net(net,
             tb_train_writer.add_scalar('train loss', epoch_loss[e] / i, epoch)
 
         if 1:
-            val_loss = eval_net(net, iddataset, dir, tb_train_writer, gpu)
+            val_loss = eval_net(net, val, dir, tb_train_writer, gpu)
             print('Validation Coeff: {}'.format(val_loss))
             tb_train_writer.add_scalar('validation coeff', val_loss / i, epoch)
     torch.save(net.state_dict(), dir + '/MODEL.pth')
@@ -164,15 +161,23 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
         net.cuda()
         # cudnn.benchmark = True # faster convolutions, but more memory
 
+    net_name = "u3d2" if "3D" in net.__class__.__name__ else "u2"
+    dir = dir_runs + time.strftime("%b%d_%H%M%S", time.localtime())
+    dir += '_E' + str(args.epochs) + 'B' + str(args.batchsize) + ('+' if augment else '')
+    dir += 'R' + str(args.lr).split('.')[-1]
+    dir += 'P' + str(WIDTH_CUTS) + 'x' + str(WIDTH_CUTS)
+    dir += 'S' + str(COL_STRIDE) + 'x' + str(ROW_STRIDE) + 'A' + net_name
+    dir += 'O' + 'sgd' + 'L' + 'ce' + 'AC' + 'bal'
+
     try:
-        train_net(net=net,
+        train_net(net=net, dir=dir,
                   epochs=args.epochs,
                   batch_size=args.batchsize,
                   lr=args.lr,
                   gpu=args.gpu,
                   augment=True)
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), dir + '/INTERRUPTED.pth')
+        torch.save(net.state_dict(), dir_runs + 'INTERRUPTED.pth')
         print('\nSaved interrupt')
         try:
             sys.exit(0)
@@ -180,4 +185,13 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
             os._exit(0)
 
 if __name__ == "__main__":
-    train(net = 'unet', epochs=1, batchsize=10, lr=0.1)
+    train(net = 'unet', epochs=4, batchsize=20, lr=0.01)
+    train(net = 'unet3d', epochs=4, batchsize=20, lr=0.01)
+    # train(net = 'unet', epochs=1000, batchsize=20, lr=0.01)
+    # train(net = 'unet3d', epochs=1000, batchsize=20, lr=0.01)
+    # train(net = 'unet', epochs=1000, batchsize=30, lr=0.01)
+    # train(net = 'unet3d', epochs=1000, batchsize=30, lr=0.01)
+    # train(net = 'unet', epochs=3000, batchsize=20, lr=0.001)
+    # train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.001)
+    # train(net = 'unet', epochs=3000, batchsize=30, lr=0.001)
+    # train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.001)

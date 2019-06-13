@@ -150,7 +150,7 @@ def predict(input, model):
             loss = balanced_score(train_mask, mask1)
             print(loss)
 
-            plot_img_and_mask(img, target, mask, loss, dir=args.model)
+            plot_img_and_mask(img, abs(true_mask), mask, loss, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]

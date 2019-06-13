@@ -18,6 +18,7 @@ class UNet(nn.Module):
         self.up3 = up(256, 64)
         self.up4 = up(128, 64)
         self.outc = outconv(64, n_classes)
+        self.final_activation = nn.LogSoftmax(dim = 1)
         #self.prob_to_bin = prob_to_bin()
 
     def forward(self, x):
@@ -44,4 +45,4 @@ class UNet(nn.Module):
         #print("outconv(64, n_classes)", x.shape)
         #x = torch.sigmoid(x) # CHANGED per avis de deprecated i tret pq ja ho fa a la nova loss
         #print("sigmoid/out", x.shape)
-        return x #self.prob_to_bin(x)
+        return self.final_activation(x) #self.prob_to_bin(x)

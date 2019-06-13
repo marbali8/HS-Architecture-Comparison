@@ -4,7 +4,7 @@ from init import *
 import os
 import numpy as np
 
-# CHANGED lo de dins i el nom pq necessito un per tallar amb .tif
+# CHANGED lo de dins i el nom pq necessito un per tallar amb .npy
 def get_ids_npy(dir_img, dir_masks):
     """Returns a list of the ids"""
     images = [f.split('.')[0] for f in os.listdir(dir_img) if '.npy' in f]
@@ -14,7 +14,7 @@ def get_ids_npy(dir_img, dir_masks):
 # CHANGED adaptat a npy
 def to_cropped_imgs(ids, dir, suffix):
     """From a list of tuples, returns the correct cropped img"""
-    for id in ids: #for id, pos in ids:
+    for i, id in enumerate(ids): #for id, pos in ids:
 
         f = np.load(dir + id + suffix)
         yield f #get_square(im, pos) CHANGED

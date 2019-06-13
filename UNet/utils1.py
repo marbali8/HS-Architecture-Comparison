@@ -18,5 +18,20 @@ def batch(iterable, batch_size):
     if len(b) > 0:
         yield b
 
+    # assert len(imgs) == len(masks)
+    # nbatches = round(len(imgs)/batch_size+0.5)
+    # b = []
+    # for i in range(nbatches):
+    #     amount = min(batch_size, len(imgs))
+    #
+    #     b.append([(imgs[i], masks[i]) for i in range(amount)])
+    #     imgs = imgs[amount:]
+    #     masks = masks[amount:]
+    # return b
+
 def normalize(x):
     return x / 255
+
+def gettwo(dataset):
+    dataset = list(dataset)
+    return dataset, dataset

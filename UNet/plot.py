@@ -9,7 +9,7 @@ rgb_indianpines = [[255,255,255], [255,254,137], [3,28,241], [255,89,1], [5,255,
 rgb_maspalomas = [[0,0,0], [72,255,72], [0,139,0], [255,255,0], [139,71,38], [0,255,0], [145,44,238], [0,0,255], [255,255,255], [160,32,240], [0,255,255], [205,0,0], [205,205,0]]
 
 # CHANGED a lot xd
-def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANGED suposant format chw i mask i target amb valors de 0 a NET_CLASSES
+def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANGED suposant format img chw i mask i target amb valors de 0 a NET_CLASSES
     #print("max img", np.max(img), "unique target", np.unique(target), "unique mask", np.unique(mask))
 
     fig = plt.figure()
@@ -32,9 +32,9 @@ def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANG
     plt.imshow(img)
 
     #print(target.shape, mask.shape)
-    rgb_target = np.zeros((3, target.shape[1], target.shape[2]))
+    rgb_target = np.zeros((3, target.shape[0], target.shape[1]))
 
-    for (ch,j,k), cl in np.ndenumerate(target):
+    for (j,k), cl in np.ndenumerate(target):
       rgb_target[:,j,k] = rgb_indianpines[cl] if INPUT_BANDS > 200 else rgb_maspalomas[cl]
 
     b = fig.add_subplot(1, 3, 2)

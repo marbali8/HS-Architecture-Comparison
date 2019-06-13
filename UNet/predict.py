@@ -118,15 +118,20 @@ def predict(input, model):
 
         # CHANGED per si es np o tif + per imprimir tambe el target
 
-        img = rasterio.open(fn).read() # chw
-        target = rasterio.open(fn.replace("/images/", "/masks/").replace(".", "_mask."))
-        target = target.read()
-
-        if img.any() == None or target.any() == None:
-          img = np.load(fn)
-          target = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask."))
-
-          if img.any() == None or target.any() == None:
+        if ".tif" in fn:
+            img = rasterio.open(fn).read() # chw
+            # here target is MxN
+            target = rasterio.open(fn.replace("/images/", "/masks/").replace(".", "_mask."))
+            target = target.read(1)
+            train_mask = target
+        elif ".npy" in fn:
+            img = np.load(fn)
+            # here target is CxMxN
+            target = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask."))
+            # not using loss_mask because i dont care about which pixels
+            train_mask = loss_mask(-abs(target), type = 'test')
+            target = train_mask
+        else:
             print("could not open image")
             exit(1)
 
@@ -146,11 +151,9 @@ def predict(input, model):
             #criterion = nn.CrossEntropyLoss()
             #loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
             # print(target1.shape, mask1.shape)
-            train_mask = loss_mask(target, type = 'test')
             loss = balanced_score(train_mask, mask1)
-            print(loss)
 
-            plot_img_and_mask(img, abs(true_mask), mask, loss, dir=args.model)
+            plot_img_and_mask(img, target, mask, loss, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -160,4 +163,4 @@ def predict(input, model):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    predict(dir_img + '19920612_AVIRIS_IndianPine_Site3.tif', model = dir_runs + 'Jun01_021118_E3000B27+R01P32x32S10x10Au2OsgdLce/MODEL.pth')
+    predict(dir_img + 'npy/recorte1_1.npy', model = dir_runs + 'Jun13_014614_E4B20+R01P128x128S64x64Au2OsgdLceACbal/MODEL.pth')

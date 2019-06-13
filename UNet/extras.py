@@ -11,21 +11,18 @@ from init import *
 # NEW
 def balanced_score(target, prediction):
 
-    if np.unique(target) == [-1]:
-        return 0
-
     t = target.flatten()
     p = prediction.flatten()
     w = get_weights('test', target).flatten()
 
     assert t.shape == p.shape == w.shape, str(target.shape) + str(prediction.shape) + str(weights.shape)
-    indexes = []
     for i, v in enumerate(t):
         if v == -1:
-            np.append(indexes, i)
-    t = np.delete(t, i)
-    p = np.delete(p, i)
-    w = np.delete(w, i)
+            t = np.delete(t, i)
+            p = np.delete(p, i)
+            w = np.delete(w, i)
+    if t.size == 0:
+        return 0
 
     return balanced_accuracy_score(t, p, w)
 
@@ -51,7 +48,7 @@ def eval_net(net, val, dir, tb_val_writer, gpu=False):
         # tot += criterion(mask_pred, torch.argmax(true_mask, 1).long()).item()
         if i == 0:
             plot_img_and_mask(  img.cpu().squeeze().numpy(),
-                                abs(true_mask),
+                                np.argmax(abs(true_mask), 0),
                                 mask_pred,
                                 tot, dir,
                                 tb_val_writer)
@@ -83,4 +80,4 @@ def loss_mask(balanced_mask, type):
             loss_mask[m, n] = c
         elif v == -considered_value:
             loss_mask[m, n] = -1
-    return loss_mask
+    return loss_mask.astype(np.int)

@@ -16,13 +16,15 @@ def balanced_score(target, prediction):
     w = get_weights('test', target).flatten()
 
     assert t.shape == p.shape == w.shape, str(target.shape) + str(prediction.shape) + str(weights.shape)
+    indexes = np.array([])
     for i, v in enumerate(t):
         if v == -1:
-            t = np.delete(t, i)
-            p = np.delete(p, i)
-            w = np.delete(w, i)
-    if t.size == 0:
+            indexes = np.append(indexes, i)
+    if indexes.size == t.size:
         return 0
+    t = np.delete(t, indexes)
+    p = np.delete(p, indexes)
+    w = np.delete(w, indexes)
 
     return balanced_accuracy_score(t, p, w)
 

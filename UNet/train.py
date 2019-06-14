@@ -123,7 +123,7 @@ def train_net(net, dir,
         else:
             tb_train_writer.add_scalar('train loss', epoch_loss[e] / i, epoch)
 
-        if 1:
+        if e % 10 == 0:
             val_loss = eval_net(net, val, dir, tb_train_writer, gpu)
             print('Validation Coeff: {}'.format(val_loss))
             tb_train_writer.add_scalar('validation coeff', val_loss / i, epoch)
@@ -185,13 +185,15 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
             os._exit(0)
 
 if __name__ == "__main__":
-    train(net = 'unet', epochs=4, batchsize=20, lr=0.01)
-    train(net = 'unet3d', epochs=4, batchsize=20, lr=0.01)
-    # train(net = 'unet', epochs=1000, batchsize=20, lr=0.01)
-    # train(net = 'unet3d', epochs=1000, batchsize=20, lr=0.01)
-    # train(net = 'unet', epochs=1000, batchsize=30, lr=0.01)
-    # train(net = 'unet3d', epochs=1000, batchsize=30, lr=0.01)
-    # train(net = 'unet', epochs=3000, batchsize=20, lr=0.001)
-    # train(net = 'unet3d', epochs=3000, batchsize=20, lr=0.001)
-    # train(net = 'unet', epochs=3000, batchsize=30, lr=0.001)
-    # train(net = 'unet3d', epochs=3000, batchsize=30, lr=0.001)
+
+    # al mac vell
+    # train(net = 'unet', epochs=20, batchsize=20, lr=0.01)
+    # train(net = 'unet3d', epochs=20, batchsize=20, lr=0.01)
+    # train(net = 'unet', epochs=30, batchsize=30, lr=0.01)
+    # train(net = 'unet3d', epochs=30, batchsize=30, lr=0.01)
+
+    # al servidor
+    train(net = 'unet', epochs=40, batchsize=20, lr=0.001)
+    train(net = 'unet3d', epochs=40, batchsize=20, lr=0.001)
+    train(net = 'unet', epochs=50, batchsize=30, lr=0.001)
+    train(net = 'unet3d', epochs=50, batchsize=30, lr=0.001)

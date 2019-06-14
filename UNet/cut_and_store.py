@@ -119,7 +119,7 @@ def doit():
 
         print(flush = False)
         np.save(dir_mask + "npy/" + im + "_class_weights", weights)
-        print("Finished cutting image", c+1, "(", num, "subimages saved )")
+        print("Finished cutting image", c+1, "(", num-1, "subimages saved )")
 
 if __name__ == "__main__":
     doit()

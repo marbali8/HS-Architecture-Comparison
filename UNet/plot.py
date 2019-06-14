@@ -39,7 +39,10 @@ def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANG
 
     b = fig.add_subplot(1, 3, 2)
     b.set_title('Target mask')
-    rgb_target = np.transpose((rgb_target/np.max(rgb_target)*255).astype(int), axes=[1,2,0])
+    if (target == 0).sum() == target.size:
+        rgb_target = np.transpose(rgb_target.astype(int), axes=[1,2,0])
+    else:
+        rgb_target = np.transpose((rgb_target/np.max(rgb_target)*255).astype(int), axes=[1,2,0])
     plt.imshow(rgb_target)
 
     rgb_mask = np.zeros((3, mask.shape[0], mask.shape[1]))
@@ -49,7 +52,10 @@ def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANG
 
     c = fig.add_subplot(1, 3, 3)
     c.set_title('Output mask')
-    rgb_mask = np.transpose((rgb_mask/np.max(rgb_mask)*255).astype(int), axes=[1,2,0])
+    if (mask == 0).sum() == mask.size:
+        rgb_mask = np.transpose(rgb_mask.astype(int), axes=[1,2,0])
+    else:
+        rgb_mask = np.transpose((rgb_mask/np.max(rgb_mask)*255).astype(int), axes=[1,2,0])
     plt.imshow(rgb_mask)
 
     #plt.colorbar()

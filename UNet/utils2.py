@@ -43,10 +43,13 @@ def get_weights(type, loss_mask=None, im = ""):
 
     assert type == 'train' or type == 'test'
     if type == 'train':
+        if float("Inf") in np.unique(w):
+            for i, v in enumerate(w):
+                 w[i] = 0 if v == float("Inf") else v
         return w
     else:
         assert loss_mask.any() != None
         new_w = np.zeros(loss_mask.shape)
         for i, p in np.ndenumerate(loss_mask):
-            new_w[i[0], i[1]] = w[int(p)]
+            new_w[i[0], i[1]] = 0 if w[int(p)] == float("Inf") else w[int(p)]
         return new_w

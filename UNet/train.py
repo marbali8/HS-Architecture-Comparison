@@ -127,7 +127,7 @@ def train_net(net, dir,
             val_loss = eval_net(net, val, dir, tb_train_writer, gpu)
             print('Validation Coeff: {}'.format(val_loss))
             tb_train_writer.add_scalar('validation coeff', val_loss / i, epoch)
-    torch.save(net.state_dict(), dir + '/MODEL.pth')
+        torch.save(net.state_dict(), dir + '/MODEL_' + str(e) + '.pth')
     print("Saved model")
     tb_train_writer.close()
 
@@ -186,14 +186,20 @@ def train(net, epochs=5, batchsize=10, lr=0.1, gpu=True, load=False, augment=Tru
 
 if __name__ == "__main__":
 
-    # al mac vell
+    # al mac vell estava posat aixo i jo ho he comentat per fer coses en paralel
     # train(net = 'unet', epochs=20, batchsize=20, lr=0.01)
     # train(net = 'unet3d', epochs=20, batchsize=20, lr=0.01)
+
+    # al mac vell en paralel
+    # train(net = 'unet', epochs=20, batchsize=10, lr=0.01)
+    # train(net = 'unet3d', epochs=20, batchsize=10, lr=0.01)
+
+    # futur
     # train(net = 'unet', epochs=30, batchsize=30, lr=0.01)
     # train(net = 'unet3d', epochs=30, batchsize=30, lr=0.01)
 
     # al servidor
     train(net = 'unet', epochs=40, batchsize=20, lr=0.001)
     train(net = 'unet3d', epochs=40, batchsize=20, lr=0.001)
-    train(net = 'unet', epochs=50, batchsize=30, lr=0.001)
-    train(net = 'unet3d', epochs=50, batchsize=30, lr=0.001)
+    train(net = 'unet', epochs=40, batchsize=30, lr=0.001)
+    train(net = 'unet3d', epochs=40, batchsize=30, lr=0.001)

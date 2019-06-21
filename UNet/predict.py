@@ -128,9 +128,13 @@ def predict(input, model):
             img = np.load(fn)
             # here target is CxMxN
             target = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask."))
+            if INPUT_BANDS > 200:
+                target_show = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask."))
+            else:
+                target_show = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask.").replace("/npy/", "/npy_randomsamples/"))
             # not using loss_mask because i dont care about which pixels
-            train_mask = loss_mask(-abs(target), type = 'test')
-            target = train_mask
+            # train_mask = loss_mask(-abs(target), type = 'test') si vols calcular loss amb tots els etiquetats
+            train_mask = loss_mask(target, type = 'test')
         else:
             print("could not open image")
             exit(1)
@@ -145,15 +149,16 @@ def predict(input, model):
         if args.viz:
             print("Visualizing results for image {}, close to continue ...".format(fn))
 
-            target1 = torch.from_numpy(target).squeeze()
-            mask1 = mask
+            # target1 = torch.from_numpy(train_mask).squeeze()
+            mask1 = mask.data.cpu().detach().numpy()
 
             #criterion = nn.CrossEntropyLoss()
             #loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
             # print(target1.shape, mask1.shape)
             loss = balanced_score(train_mask, mask1)
+            print("loss", loss)
 
-            plot_img_and_mask(img, target, mask, loss, dir=args.model)
+            plot_img_and_mask(img, plot_mask(target_show), mask1, loss, dir=args.model)
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -163,4 +168,7 @@ def predict(input, model):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    predict(dir_img + 'npy/recorte1_1.npy', model = dir_runs + 'Jun13_014614_E4B20+R01P128x128S64x64Au2OsgdLceACbal/MODEL.pth')
+    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_9.pth')
+    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_19.pth')
+    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_29.pth')
+    predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_39.pth')

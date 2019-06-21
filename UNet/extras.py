@@ -25,6 +25,7 @@ def balanced_score(target, prediction):
     t = np.delete(t, indexes)
     p = np.delete(p, indexes)
     w = np.delete(w, indexes)
+    print("unique t balanced_score", np.unique(t, return_counts=True), np.unique(p, return_counts=True), np.unique(w, return_counts=True))
 
     return balanced_accuracy_score(t, p, w)
 
@@ -50,7 +51,7 @@ def eval_net(net, val, dir, tb_val_writer, gpu=False):
         # tot += criterion(mask_pred, torch.argmax(true_mask, 1).long()).item()
         if i == 0:
             plot_img_and_mask(  img.cpu().squeeze().numpy(),
-                                np.argmax(abs(true_mask), 0),
+                                plot_mask(true_mask),
                                 mask_pred,
                                 tot, dir,
                                 tb_val_writer)
@@ -77,9 +78,16 @@ def loss_mask(balanced_mask, type):
     considered_value = 1 if type == 'train' else -1
 
     loss_mask = np.zeros((balanced_mask.shape[1], balanced_mask.shape[2]))
-    for (c,m,n), v in np.ndenumerate(balanced_mask):
-        if v == considered_value:
-            loss_mask[m, n] = c
-        elif v == -considered_value:
-            loss_mask[m, n] = -1
+    _balanced_mask = np.transpose(balanced_mask, axes=[1,2,0]) #hwc
+    for r, row in enumerate(_balanced_mask):
+        for c, col in enumerate(row):
+            assert col.shape == (balanced_mask.shape[0],), '(' + str(r) + ',' + str(c) + ')'
+            con = np.where(col == considered_value)[0]
+            loss_mask[r, c] = con[0] if con.size != 0 else -1
     return loss_mask.astype(np.int)
+
+# asi te devuelve la classe o menos 1 si no esta etiquetado, en este caso el type
+# importa para lo del considered_value en loss_mask (podriamos poner test pero entonces
+# le pasariamos -abs(balanced_mask))
+def plot_mask(balanced_mask, type='train'):
+    return loss_mask(np.squeeze(abs(balanced_mask)), type)

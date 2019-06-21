@@ -37,51 +37,84 @@ import numpy as np
 #         max = np.argmax(abs(balanced_mask[r, c, :]))
 #         mask[r, c] = max*balanced_mask[r, c, max]
 
+# import os
+# def to_cropped_imgs(ids):
+#     for id in ids:
+#         f = np.load('/Users/marbalibrea/Desktop/' + id)
+#         yield f
+#
+# def get_imgs_and_masks(ids):
+#     """Return all the couples (img, mask)"""
+#
+#     imgs = to_cropped_imgs(ids)
+#     masks = to_cropped_imgs(ids)
+#     return zip(imgs, masks)
+#
+# def batch(iterable, batch_size):
+#     """Yields lists by batch"""
+#     b = []
+#     for i, t in enumerate(iterable): # i de 0 a #imatges-1
+#         b.append(t)
+#         if (i + 1) % batch_size == 0:
+#             yield b
+#             b = []
+#
+#     if len(b) > 0:
+#         yield b
+#
+# def split_train_val(dataset):
+#     dataset = list(dataset)
+#     return dataset, dataset
+#
+# def eval_net(things, e):
+#     for i, b in enumerate(things):
+#         print("eval", e, ":", b[0].shape)
+#
+# path_img = '/Users/marbalibrea/Desktop/'
+# ids = (f for f in os.listdir(path_img) if '.npy' in f)
+# iddataset = split_train_val(ids)
+#
+# for e, epoch in enumerate(range(10)):
+#
+#     train = get_imgs_and_masks(iddataset[0])
+#     val = get_imgs_and_masks(iddataset[1])
+#
+#     for i, b in enumerate(batch(train, 3)):
+#         print(i, b[0][0].shape)
+#         imgs = np.array([i[0] for i in b])
+#         masks = np.array([i[1] for i in b])
+#
+#     eval_net(val, e)
+
+import rasterio
+import numpy as np
 import os
-def to_cropped_imgs(ids):
-    for id in ids:
-        f = np.load('/Users/marbalibrea/Desktop/' + id)
-        yield f
+mask = rasterio.open("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/recorte1_mask.tif")
+assert len(mask.shape) == 2
+train_mask = np.zeros((13, mask.shape[0], mask.shape[1]), dtype=int)
 
-def get_imgs_and_masks(ids):
-    """Return all the couples (img, mask)"""
+indexes_t = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1')
+indexes_v = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación')
 
-    imgs = to_cropped_imgs(ids)
-    masks = to_cropped_imgs(ids)
-    return zip(imgs, masks)
+# (NET_CLASSES, MASK_H, MASK_W) but now has values of 1 (pixel of that class),
+# 0 (pixel of other class) or -1 (pixel of that class not considered
+# for training, just for testing)
+for i in indexes_t:
+    indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1/'+i)
+    label = int(i.split('.')[0])
 
-def batch(iterable, batch_size):
-    """Yields lists by batch"""
-    b = []
-    for i, t in enumerate(iterable): # i de 0 a #imatges-1
-        b.append(t)
-        if (i + 1) % batch_size == 0:
-            yield b
-            b = []
+    for index in indexes:
+        train_mask[label, index[0], index[1]] = 1
 
-    if len(b) > 0:
-        yield b
+for i in indexes_v:
+    indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación/'+i)
+    label = int(i.split('.')[0])
 
-def split_train_val(dataset):
-    dataset = list(dataset)
-    return dataset, dataset
+    for index in indexes:
+        train_mask[label, index[0], index[1]] = -1
 
-def eval_net(things, e):
-    for i, b in enumerate(things):
-        print("eval", e, ":", b[0].shape)
-
-path_img = '/Users/marbalibrea/Desktop/'
-ids = (f for f in os.listdir(path_img) if '.npy' in f)
-iddataset = split_train_val(ids)
-
-for e, epoch in enumerate(range(10)):
-
-    train = get_imgs_and_masks(iddataset[0])
-    val = get_imgs_and_masks(iddataset[1])
-
-    for i, b in enumerate(batch(train, 3)):
-        print(i, b[0][0].shape)
-        imgs = np.array([i[0] for i in b])
-        masks = np.array([i[1] for i in b])
-
-    eval_net(val, e)
+train_mask = abs(train_mask)
+samples_per_class = [(train_mask[i] == 1).sum() for i in range(13)]
+N = sum(samples_per_class) # N pixels
+weights = N/samples_per_class
+np.save("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/" + "npy/recorte1_class_weights", weights)

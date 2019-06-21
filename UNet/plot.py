@@ -35,7 +35,11 @@ def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANG
     rgb_target = np.zeros((3, target.shape[0], target.shape[1]))
 
     for (j,k), cl in np.ndenumerate(target):
-      rgb_target[:,j,k] = rgb_indianpines[cl] if INPUT_BANDS > 200 else rgb_maspalomas[cl]
+        if cl == -1:
+            rgb_target[:,j,k] = [255,0,0]
+        else:
+            rgb_target[:,j,k] = rgb_indianpines[cl] if INPUT_BANDS > 200 else rgb_maspalomas[cl]
+
 
     b = fig.add_subplot(1, 3, 2)
     b.set_title('Target mask')
@@ -59,11 +63,13 @@ def plot_img_and_mask(img, target, mask, loss, dir, tb_val_writer=None): # CHANG
     plt.imshow(rgb_mask)
 
     #plt.colorbar()
-    plt.show()
+    # plt.show()
 
     if tb_val_writer == None:
+        model_name = dir.split('/')[-1].split('.')[0]
         dir = '/'.join(dir.split('/')[:-1]) + '/'
-        plt.savefig(dir + 'predict' + dir.split('/')[-2] + '.png', bbox_inches='tight')
+        plt.savefig(dir + 'predict' + dir.split('/')[-2] + model_name + '.png', bbox_inches='tight')
+        np.save(dir + "pred.npy", mask)
     else:
         tb_val_writer.add_figure('example val patch', fig)
     plt.close()

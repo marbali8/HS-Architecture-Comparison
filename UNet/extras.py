@@ -25,7 +25,6 @@ def balanced_score(target, prediction):
     t = np.delete(t, indexes)
     p = np.delete(p, indexes)
     w = np.delete(w, indexes)
-    print("unique t balanced_score", np.unique(t, return_counts=True), np.unique(p, return_counts=True), np.unique(w, return_counts=True))
 
     return balanced_accuracy_score(t, p, w)
 

@@ -199,7 +199,9 @@ if __name__ == "__main__":
     # train(net = 'unet3d', epochs=30, batchsize=30, lr=0.01)
 
     # al servidor
-    train(net = 'unet', epochs=40, batchsize=20, lr=0.001)
-    train(net = 'unet3d', epochs=40, batchsize=20, lr=0.001)
-    train(net = 'unet', epochs=40, batchsize=30, lr=0.001)
-    train(net = 'unet3d', epochs=40, batchsize=30, lr=0.001)
+    # train(net = 'unet', epochs=40, batchsize=20, lr=0.001)
+    # train(net = 'unet3d', epochs=40, batchsize=20, lr=0.001)
+    # train(net = 'unet', epochs=40, batchsize=30, lr=0.001)
+    # train(net = 'unet3d', epochs=40, batchsize=30, lr=0.001)
+    train(net = 'unet', epochs=80, batchsize=30, lr=0.001)
+    train(net = 'unet3d', epochs=80, batchsize=30, lr=0.001)

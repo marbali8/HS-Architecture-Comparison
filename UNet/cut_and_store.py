@@ -31,7 +31,7 @@ def weights_and_samples_balanced(mask, val_percent=VAL_PERCENT):
     nsamples = math.floor(N*(1-val_percent))
 
     weight_per_class = N/samples_per_class
-    samples_per_class = np.floor(weight_per_class*nsamples).astype(int)
+    samples_per_class = np.floor(1/weight_per_class*nsamples).astype(int)
 
     return weight_per_class, samples_per_class
 

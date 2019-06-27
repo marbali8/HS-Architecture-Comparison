@@ -123,6 +123,7 @@ def predict(input, model):
             # here target is MxN
             target = rasterio.open(fn.replace("/images/", "/masks/").replace(".", "_mask."))
             target = target.read(1)
+            target_show = target
             train_mask = target
         elif ".npy" in fn:
             img = np.load(fn)
@@ -132,9 +133,10 @@ def predict(input, model):
                 target_show = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask."))
             else:
                 target_show = np.load(fn.replace("/images/", "/masks/").replace(".", "_mask.").replace("/npy/", "/npy_randomsamples/"))
-            # not using loss_mask because i dont care about which pixels
-            # train_mask = loss_mask(-abs(target), type = 'test') si vols calcular loss amb tots els etiquetats
+
+            target_show = plot_mask(target_show)
             train_mask = loss_mask(target, type = 'test')
+
         else:
             print("could not open image")
             exit(1)
@@ -149,16 +151,35 @@ def predict(input, model):
         if args.viz:
             print("Visualizing results for image {}, close to continue ...".format(fn))
 
+            t_samples_per_class = [0] * NET_CLASSES
+            p_samples_per_class = [0] * NET_CLASSES
+
             # target1 = torch.from_numpy(train_mask).squeeze()
             mask1 = mask.data.cpu().detach().numpy()
 
             #criterion = nn.CrossEntropyLoss()
             #loss = criterion(mask1.float(), torch.argmax(target1, 1)).item()
-            # print(target1.shape, mask1.shape)
             loss = balanced_score(train_mask, mask1)
-            print("loss", loss)
+            print("acc", loss)
 
-            plot_img_and_mask(img, plot_mask(target_show), mask1, loss, dir=args.model)
+            assert mask1.shape == train_mask.shape
+            for index, v in np.ndenumerate(train_mask):
+                if v != -1:
+                    t_samples_per_class[v] += 1
+                    pred = int(mask1[index[0],index[1]])
+                    if pred == v:
+                        p_samples_per_class[pred] += 1
+
+            model_name = args.model.split('/')[-1].split('.')[0]
+            dir = '/'.join(args.model.split('/')[:-1]) + '/'
+
+            f = open(dir + "percentage" + input.split('/')[-1].split('.')[0] + model_name + ".txt", "a")
+            f.write("#\tt\tp\n")
+            for i, c in enumerate(t_samples_per_class):
+                f.write(str(i) + "\t" + str(t_samples_per_class[i]) + "\t" + str(p_samples_per_class[i]) + "\n")
+            f.close()
+
+            plot_img_and_mask(img, target_show, mask1, loss, dir=args.model, dir2=input.split('/')[-1].split('.')[0])
 
         if not args.no_save:
             out_fn = out_files[i]
@@ -168,7 +189,24 @@ def predict(input, model):
             print("Mask saved to {}".format(out_files[i]))
 
 if __name__ == "__main__":
-    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_9.pth')
-    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_19.pth')
-    # predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_29.pth')
-    predict(dir_img + 'npy/recorte1_5089.npy', model = dir_runs + 'Jun18_114152_E40B20+R001P128x128S64x64Au2OsgdLceACbal/MODEL_39.pth')
+    places = [  # "Jun21_103929_E20B10+R01P128x128S64x64Au2OsgdLceACbal", # mac vell
+                # "Jun21_103919_E20B20+R01P128x128S64x64Au2OsgdLceACbal", # mac vell
+                # "Jun21_113025_E40B20+R001P128x128S64x64Au2OsgdLceACbal", # servidor
+                # "Jun22_011842_E40B20+R001P128x128S64x64Au3d2OsgdLceACbal", # servidor
+                # "Jun22_135801_E40B30+R001P128x128S64x64Au2OsgdLceACbal", # servidor
+                # "Jun22_231148_E40B30+R001P128x128S64x64Au3d2OsgdLceACbal", # servidor
+                # "Jun23_211802_E80B30+R001P128x128S64x64Au2OsgdLceACbal",  # servidor
+                "Jun24_160815_E80B30+R001P128x128S64x64Au3d2OsgdLceACbal"] # servidor
+    models = [  # '/MODEL_9.pth', '/MODEL_19.pth', '/MODEL_29.pth', '/MODEL_39.pth',
+                # '/MODEL_49.pth', '/MODEL_59.pth', '/MODEL_69.pth',
+                '/MODEL_79.pth']
+    for p in places:
+        for m in models:
+            if os.path.isfile(dir_runs + p + m):
+                predict(dir_img + 'npy/recorte1_2402.npy', model = dir_runs + p + m)
+                predict(dir_img + 'npy/recorte1_1008.npy', model = dir_runs + p + m)
+                predict(dir_img + 'npy/recorte1_2403.npy', model = dir_runs + p + m)
+                predict(dir_img + 'npy/recorte1_1789.npy', model = dir_runs + p + m)
+
+# scp mbalibrea@imatge.upc.edu:/work-nfs/mbalibrea/runs/maspalomas/Jun23_211802_E80B30+R001P128x128S64x64Au2OsgdLceACbal/predictrecorte* /Users/marbalibrea/Desktop/rellevant/Jun23_211802_E80B30+R001P128x128S64x64Au2OsgdLceACbal
+# scp mbalibrea@imatge.upc.edu:/work-nfs/mbalibrea/runs/maspalomas/Jun23_211802_E80B30+R001P128x128S64x64Au2OsgdLceACbal/percentagerec* /Users/marbalibrea/Desktop/rellevant/Jun23_211802_E80B30+R001P128x128S64x64Au2OsgdLceACbal

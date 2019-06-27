@@ -86,35 +86,60 @@ import numpy as np
 #
 #     eval_net(val, e)
 
-import rasterio
-import numpy as np
-import os
-mask = rasterio.open("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/recorte1_mask.tif")
-assert len(mask.shape) == 2
-train_mask = np.zeros((13, mask.shape[0], mask.shape[1]), dtype=int)
-
-indexes_t = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1')
-indexes_v = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación')
+# import rasterio
+# import numpy as np
+# import os
+# mask = rasterio.open("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/recorte1_mask.tif")
+# assert len(mask.shape) == 2
+# train_mask = np.zeros((13, mask.shape[0], mask.shape[1]), dtype=int)
+#
+# indexes_t = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1')
+# indexes_v = os.listdir('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación')
 
 # (NET_CLASSES, MASK_H, MASK_W) but now has values of 1 (pixel of that class),
 # 0 (pixel of other class) or -1 (pixel of that class not considered
 # for training, just for testing)
-for i in indexes_t:
-    indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1/'+i)
-    label = int(i.split('.')[0])
+# labels = 0
+# for i in indexes_t:
+#     indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Entrenamiento/1/'+i)
+#     label = int(i.split('.')[0])
+#     print("t", str(label), len(indexes))
+#     labels += len(indexes)
+# print("t", labels)
+# labels = 0
+# for i in indexes_v:
+#     indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación/'+i)
+#     label = int(i.split('.')[0])
+#     print("v", str(label), len(indexes))
+#     labels += len(indexes)
+# print("v", labels)
 
-    for index in indexes:
-        train_mask[label, index[0], index[1]] = 1
+# train_mask = abs(train_mask)
+# samples_per_class = [(train_mask[i] == 1).sum() for i in range(13)]
+# N = sum(samples_per_class) # N pixels
+# weights = N/samples_per_class
+# np.save("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/" + "npy/recorte1_class_weights", weights)
 
-for i in indexes_v:
-    indexes = np.load('/work-nfs/mbalibrea/data/TRAIN/maspalomas/ROIs/Evaluación/'+i)
-    label = int(i.split('.')[0])
+# masks = "/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/npy/"
+# for m in os.listdir(masks):
+#     f = np.load(masks + m)
+#     l = np.where(f == -1)
+#     if len(l[0]) > 400:
+#         print(m, np.unique(l[0], return_counts=True))
 
-    for index in indexes:
-        train_mask[label, index[0], index[1]] = -1
+import numpy as np
+import matplotlib.pyplot as plt
 
-train_mask = abs(train_mask)
-samples_per_class = [(train_mask[i] == 1).sum() for i in range(13)]
-N = sum(samples_per_class) # N pixels
-weights = N/samples_per_class
-np.save("/work-nfs/mbalibrea/data/TRAIN/maspalomas/masks/" + "npy/recorte1_class_weights", weights)
+rgb_indianpines = [[255,255,255], [255,254,137], [3,28,241], [255,89,1], [5,255,133], [255,2,251], [89,1,255], [3,171,255], [12,255,7], [172,175,84], [160,78,158], [101,173,255], [60,91,112], [104,192,63], [139,69,46], [119,255,172], [254,255,3]]
+
+colors = np.zeros((3,20*len(rgb_indianpines), 100))
+
+for (p,m,n), v in np.ndenumerate(colors):
+    c = int(m/20)
+    colors[p,m,n] = rgb_indianpines[c][p]
+
+fig = plt.figure()
+img = np.transpose(colors, axes=[1,2,0]).astype(int)
+print(np.amax(img), np.amin(img))
+plt.imshow(img)
+plt.savefig("/Users/marbalibrea/Desktop/colors_indian.png")
